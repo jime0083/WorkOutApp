@@ -1,0 +1,133 @@
+# WorkOutApp 完了タスクアーカイブ
+
+## 運用ルール
+
+### 必須ルール（厳守）
+1. **progress.txt / manual-work.txt で完了したPhase/Workは必ずここに移動する**
+2. **移動を行わずに次のPhase/Workに進むことは禁止**
+3. **各タスクには完了日 [完了: YYYY-MM-DD] を記録**
+4. **最新の完了タスクを上部に追加（降順）**
+
+### 移動前チェックリスト
+Phase/Workを移動する前に以下を確認:
+- [ ] 全タスクに [完了: YYYY-MM-DD] が付いているか
+- [ ] 未完了のタスク（[ ]）が残っていないか
+- [ ] 関連する問題がproblem.txtで「解決済み」になっているか
+
+### 移動手順
+1. progress.txt または manual-work.txt から該当セクションをコピー
+2. このファイルの「アーカイブ履歴」セクションの先頭に貼り付け
+3. 元のファイルから該当セクションを削除
+4. 移動完了を確認
+
+---
+
+## 完了済み Phase（AI作業）
+
+### [記載例]
+## Phase X: フェーズ名
+完了日: YYYY-MM-DD
+
+### X.1 セクション名
+- [x] タスク1 [完了: YYYY-MM-DD]
+- [x] タスク2 [完了: YYYY-MM-DD]
+
+---
+
+## 完了済み Work（手動作業）
+
+---
+
+## Work 1: Apple Developer Program 登録
+完了日: 2026-05-02（既存登録済み）
+
+### 1.1 Apple ID 準備
+- [x] Apple ID 作成 [完了: 既存]
+- [x] 二要素認証の有効化 [完了: 既存]
+
+### 1.2 Apple Developer Program 登録
+- [x] Apple Developer Program 登録 [完了: 既存]
+- [x] 登録承認 [完了: 既存]
+- [x] 登録完了確認 [完了: 既存]
+
+### 1.3 開発者情報設定
+- [x] App Store Connect へのアクセス確認 [完了: 既存]
+- [x] 契約・税金・銀行情報の設定 [完了: 既存]
+
+---
+
+## Work 2: Firebase プロジェクト作成
+完了日: 2026-05-02
+
+### 2.1 Firebase プロジェクト作成
+- [x] Firebase Console にアクセス [完了: 2026-05-02]
+- [x] 新規プロジェクト作成（プロジェクト名: WorkOutApp）[完了: 2026-05-02]
+- [x] Google Analytics 設定 [完了: 2026-05-02]
+
+### 2.2 Firebase サービス有効化
+- [x] Authentication 有効化（メール/パスワード認証）[完了: 2026-05-02]
+- [x] Firestore Database 作成 [完了: 2026-05-02]
+- [x] Storage 有効化 [完了: 2026-05-02]
+- [x] Cloud Functions 有効化 [完了: 2026-05-02]
+- [x] Cloud Messaging 有効化 [完了: 2026-05-02]
+
+### 2.3 Firebase プラン
+- [x] Blazeプラン（従量課金）へアップグレード [完了: 2026-05-02]
+
+### 2.4 Firebase アプリ登録
+- [x] iOS アプリ登録、GoogleService-Info.plist ダウンロード [完了: 2026-05-02]
+- [x] Web アプリ登録、firebaseConfig 取得 [完了: 2026-05-02]
+
+### 2.5 Firebase 設定情報の記録
+- [x] プロジェクトID: workoutapp-72355 [完了: 2026-05-02]
+- [x] iOS: GoogleService-Info.plist を mobile/ios/ に配置 [完了: 2026-05-02]
+- [x] Web: firebaseConfig を web/src/services/firebase.ts に設定 [完了: 2026-05-02]
+
+---
+
+## アーカイブ履歴
+
+---
+
+## Phase 1: プロジェクト初期設定
+完了日: 2026-05-02
+
+### 1.1 リポジトリ構成
+- [x] ルートディレクトリ構成作成（mobile/, web/, functions/, docs/）[完了: 2026-05-02]
+- [x] .gitignore 作成 [完了: 2026-05-02]
+- [x] README.md 作成（プロジェクト概要）[完了: 2026-05-02]
+
+### 1.2 React Native（iOS）初期設定
+- [x] React Native プロジェクト作成（mobile/）[完了: 2026-05-02]
+- [x] TypeScript 設定 [完了: 2026-05-02]
+- [x] ESLint / Prettier 設定 [完了: 2026-05-02]
+- [x] 基本ディレクトリ構成作成（src/screens, src/components, etc.）[完了: 2026-05-02]
+
+### 1.3 React Web 初期設定
+- [x] Vite + React プロジェクト作成（web/）[完了: 2026-05-02]
+- [x] TypeScript 設定 [完了: 2026-05-02]
+- [x] ESLint / Prettier 設定 [完了: 2026-05-02]
+- [x] 基本ディレクトリ構成作成（src/pages, src/components, etc.）[完了: 2026-05-02]
+
+### 1.4 Cloud Functions 初期設定
+- [x] Firebase Functions プロジェクト作成（functions/）[完了: 2026-05-02]
+- [x] TypeScript 設定 [完了: 2026-05-02]
+- [x] ESLint 設定 [完了: 2026-05-02]
+- [x] 基本ディレクトリ構成作成（src/auth, src/messaging, etc.）[完了: 2026-05-02]
+
+### 1.5 Firebase 設定ファイル
+- [x] firebase.json 作成 [完了: 2026-05-02]
+- [x] .firebaserc 作成 [完了: 2026-05-02]
+- [x] Firebase Emulator 設定 [完了: 2026-05-02]
+
+---
+
+## 設計書作成（初期作業）
+完了日: 2026-05-02
+
+- [x] 要件定義書作成（docs/requirements.md）[完了: 2026-05-02]
+- [x] 技術設計書作成（docs/technical-design.md）[完了: 2026-05-02]
+- [x] progress.txt 作成 [完了: 2026-05-02]
+- [x] manual-work.txt 作成 [完了: 2026-05-02]
+- [x] archive.txt 作成 [完了: 2026-05-02]
+- [x] problem.txt 作成 [完了: 2026-05-02]

@@ -1,0 +1,88 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ========================================
+    // ユーザードキュメント
+    // ========================================
+    match /users/{userId} {
+      // 自分のドキュメントのみ読み書き可能
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null && request.auth.uid == userId;
+      allow update: if request.auth != null && request.auth.uid == userId;
+      allow delete: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // ========================================
+    // 友達関係
+    // ========================================
+    match /friendships/{friendshipId} {
+      // 当事者のみ読み取り可能
+      allow read: if request.auth != null
+        && (resource.data.requesterId == request.auth.uid
+            || resource.data.receiverId == request.auth.uid);
+
+      // 申請者のみ作成可能
+      allow create: if request.auth != null
+        && request.resource.data.requesterId == request.auth.uid;
+
+      // 当事者のみ更新・削除可能
+      allow update: if request.auth != null
+        && (resource.data.requesterId == request.auth.uid
+            || resource.data.receiverId == request.auth.uid);
+      allow delete: if request.auth != null
+        && (resource.data.requesterId == request.auth.uid
+            || resource.data.receiverId == request.auth.uid);
+    }
+
+    // ========================================
+    // 会話
+    // ========================================
+    match /conversations/{conversationId} {
+      // 参加者のみ読み取り可能
+      allow read: if request.auth != null
+        && request.auth.uid in resource.data.participantIds;
+
+      // 作成はCloud Functionsのみ
+      allow create: if false;
+
+      // 参加者のみ更新可能
+      allow update: if request.auth != null
+        && request.auth.uid in resource.data.participantIds;
+
+      // 削除はCloud Functionsのみ
+      allow delete: if false;
+
+      // メッセージ（サブコレクション）
+      match /messages/{messageId} {
+        // 会話の参加者のみ読み取り可能
+        allow read: if request.auth != null
+          && request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participantIds;
+
+        // 参加者のみ作成可能（送信者は自分自身）
+        allow create: if request.auth != null
+          && request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participantIds
+          && request.resource.data.senderId == request.auth.uid;
+
+        // 送信者のみ更新可能（論理削除用）
+        allow update: if request.auth != null
+          && resource.data.senderId == request.auth.uid;
+
+        // 物理削除は禁止（論理削除のみ）
+        allow delete: if false;
+      }
+    }
+
+    // ========================================
+    // 課金情報
+    // ========================================
+    match /subscriptions/{subscriptionId} {
+      // 自分の課金情報のみ読み取り可能
+      allow read: if request.auth != null
+        && resource.data.userId == request.auth.uid;
+
+      // 書き込みはCloud Functionsのみ
+      allow write: if false;
+    }
+  }
+}
