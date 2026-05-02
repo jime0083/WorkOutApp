@@ -1,35 +1,109 @@
 rules_version = '2';
+
 service firebase.storage {
   match /b/{bucket}/o {
 
-    // ========================================
-    // プロフィール画像
-    // ========================================
-    match /profiles/{userId}/{fileName} {
-      // 認証済みユーザーのみ読み取り可能
-      allow read: if request.auth != null;
+    // ============================================
+    // ヘルパー関数
+    // ============================================
 
-      // 自分のプロフィール画像のみアップロード可能
-      allow write: if request.auth != null
-        && request.auth.uid == userId
-        && request.resource.size < 5 * 1024 * 1024  // 5MB制限
-        && request.resource.contentType.matches('image/.*');
+    // 認証済みかチェック
+    function isAuthenticated() {
+      return request.auth != null;
     }
 
-    // ========================================
-    // メッセージ添付ファイル
-    // ========================================
-    match /messages/{conversationId}/{fileName} {
-      // 認証済みユーザーのみ読み取り可能
-      // TODO: 会話参加者のみに制限する場合はCloud Functionsで検証
-      allow read: if request.auth != null;
+    // 自分自身かチェック
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
 
-      // 認証済みユーザーのみアップロード可能
-      // 課金チェックはCloud Functionsで実施
-      allow write: if request.auth != null
-        && request.resource.size < 100 * 1024 * 1024  // 100MB制限
-        && (request.resource.contentType.matches('image/.*')
-            || request.resource.contentType.matches('video/.*'));
+    // 画像ファイルかチェック
+    function isImage() {
+      return request.resource.contentType.matches('image/.*');
+    }
+
+    // 動画ファイルかチェック
+    function isVideo() {
+      return request.resource.contentType.matches('video/.*');
+    }
+
+    // ============================================
+    // プロフィール画像
+    // profiles/{userId}/{fileName}
+    // ============================================
+    match /profiles/{userId}/{fileName} {
+      // 読み取り: 認証済みユーザーのみ
+      allow read: if isAuthenticated();
+
+      // 書き込み: 自分のプロフィール画像のみ
+      // - 5MB制限
+      // - 画像ファイルのみ
+      allow write: if isOwner(userId)
+        && request.resource.size < 5 * 1024 * 1024
+        && isImage();
+
+      // 削除: 自分のプロフィール画像のみ
+      allow delete: if isOwner(userId);
+    }
+
+    // ============================================
+    // メッセージ添付ファイル（画像）
+    // messages/{conversationId}/images/{fileName}
+    // ============================================
+    match /messages/{conversationId}/images/{fileName} {
+      // 読み取り: 認証済みユーザーのみ
+      // 会話参加者チェックはアプリケーション層で実施
+      allow read: if isAuthenticated();
+
+      // 書き込み: 認証済みユーザーのみ
+      // - 10MB制限
+      // - 画像ファイルのみ
+      // - 課金チェックはCloud Functionsで実施
+      allow write: if isAuthenticated()
+        && request.resource.size < 10 * 1024 * 1024
+        && isImage();
+
+      // 削除: 不可（論理削除のみ）
+      allow delete: if false;
+    }
+
+    // ============================================
+    // メッセージ添付ファイル（動画）
+    // messages/{conversationId}/videos/{fileName}
+    // ============================================
+    match /messages/{conversationId}/videos/{fileName} {
+      // 読み取り: 認証済みユーザーのみ
+      allow read: if isAuthenticated();
+
+      // 書き込み: 認証済みユーザーのみ
+      // - 100MB制限
+      // - 動画ファイルのみ
+      // - 課金チェックはCloud Functionsで実施
+      allow write: if isAuthenticated()
+        && request.resource.size < 100 * 1024 * 1024
+        && isVideo();
+
+      // 削除: 不可（論理削除のみ）
+      allow delete: if false;
+    }
+
+    // ============================================
+    // サムネイル
+    // messages/{conversationId}/thumbnails/{fileName}
+    // ============================================
+    match /messages/{conversationId}/thumbnails/{fileName} {
+      // 読み取り: 認証済みユーザーのみ
+      allow read: if isAuthenticated();
+
+      // 書き込み: 認証済みユーザーのみ
+      // - 1MB制限
+      // - 画像ファイルのみ
+      allow write: if isAuthenticated()
+        && request.resource.size < 1 * 1024 * 1024
+        && isImage();
+
+      // 削除: 不可
+      allow delete: if false;
     }
   }
 }

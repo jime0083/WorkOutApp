@@ -1,0 +1,18 @@
+/**
+ * DateSeparator スタイル
+ */
+
+.container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 16px 0;
+}
+
+.label {
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+  background-color: var(--color-background-secondary);
+  padding: 4px 12px;
+  border-radius: 12px;
+}

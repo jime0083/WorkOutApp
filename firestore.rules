@@ -1,88 +1,148 @@
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ========================================
-    // ユーザードキュメント
-    // ========================================
+    // ============================================
+    // ヘルパー関数
+    // ============================================
+
+    // 認証済みユーザーかチェック
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // 自分自身かチェック
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // 会話の参加者かチェック
+    function isParticipant(conversationData) {
+      return isAuthenticated() && request.auth.uid in conversationData.participantIds;
+    }
+
+    // 友達関係の当事者かチェック
+    function isFriendshipMember(friendshipData) {
+      return isAuthenticated() &&
+        (request.auth.uid == friendshipData.requesterId ||
+         request.auth.uid == friendshipData.receiverId);
+    }
+
+    // ============================================
+    // users コレクション
+    // ============================================
     match /users/{userId} {
-      // 自分のドキュメントのみ読み書き可能
-      allow read: if request.auth != null && request.auth.uid == userId;
-      allow create: if request.auth != null && request.auth.uid == userId;
-      allow update: if request.auth != null && request.auth.uid == userId;
-      allow delete: if request.auth != null && request.auth.uid == userId;
-    }
+      // 読み取り: 認証済みユーザーのみ（友達検索用にvisibleUserIdでの検索を許可）
+      allow read: if isAuthenticated();
 
-    // ========================================
-    // 友達関係
-    // ========================================
-    match /friendships/{friendshipId} {
-      // 当事者のみ読み取り可能
-      allow read: if request.auth != null
-        && (resource.data.requesterId == request.auth.uid
-            || resource.data.receiverId == request.auth.uid);
-
-      // 申請者のみ作成可能
-      allow create: if request.auth != null
-        && request.resource.data.requesterId == request.auth.uid;
-
-      // 当事者のみ更新・削除可能
-      allow update: if request.auth != null
-        && (resource.data.requesterId == request.auth.uid
-            || resource.data.receiverId == request.auth.uid);
-      allow delete: if request.auth != null
-        && (resource.data.requesterId == request.auth.uid
-            || resource.data.receiverId == request.auth.uid);
-    }
-
-    // ========================================
-    // 会話
-    // ========================================
-    match /conversations/{conversationId} {
-      // 参加者のみ読み取り可能
-      allow read: if request.auth != null
-        && request.auth.uid in resource.data.participantIds;
-
-      // 作成はCloud Functionsのみ
+      // 作成: Cloud Functions経由のみ（認証トリガーで作成）
       allow create: if false;
 
-      // 参加者のみ更新可能
-      allow update: if request.auth != null
-        && request.auth.uid in resource.data.participantIds;
+      // 更新: 自分自身のみ、かつ変更可能フィールドのみ
+      allow update: if isOwner(userId) &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['nickname', 'profileImageUrl', 'fcmToken', 'updatedAt', 'lastLoginAt']);
 
-      // 削除はCloud Functionsのみ
+      // 削除: Cloud Functions経由のみ
+      allow delete: if false;
+    }
+
+    // ============================================
+    // conversations コレクション
+    // ============================================
+    match /conversations/{conversationId} {
+      // 読み取り: 参加者のみ
+      allow read: if isParticipant(resource.data);
+
+      // 作成: 認証済みユーザーで、自分が参加者に含まれている
+      allow create: if isAuthenticated() &&
+        request.auth.uid in request.resource.data.participantIds &&
+        request.resource.data.participantIds.size() == 2;
+
+      // 更新: 参加者のみ（lastMessage, unreadCount, updatedAtの更新）
+      allow update: if isParticipant(resource.data) &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['lastMessage', 'unreadCount', 'updatedAt']);
+
+      // 削除: 不可（パニック削除はCloud Functions経由）
       allow delete: if false;
 
-      // メッセージ（サブコレクション）
+      // ----------------------------------------
+      // messages サブコレクション
+      // ----------------------------------------
       match /messages/{messageId} {
-        // 会話の参加者のみ読み取り可能
-        allow read: if request.auth != null
-          && request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participantIds;
+        // 読み取り: 会話の参加者のみ
+        allow read: if isAuthenticated() &&
+          request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participantIds;
 
-        // 参加者のみ作成可能（送信者は自分自身）
-        allow create: if request.auth != null
-          && request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participantIds
-          && request.resource.data.senderId == request.auth.uid;
+        // 作成: 会話の参加者で、送信者が自分自身
+        allow create: if isAuthenticated() &&
+          request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participantIds &&
+          request.resource.data.senderId == request.auth.uid;
 
-        // 送信者のみ更新可能（論理削除用）
-        allow update: if request.auth != null
-          && resource.data.senderId == request.auth.uid;
+        // 更新: 送信者のみ（削除フラグの更新）または受信者（既読フラグの更新）
+        allow update: if isAuthenticated() &&
+          request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participantIds &&
+          (
+            // 送信者: 削除フラグの更新
+            (resource.data.senderId == request.auth.uid &&
+             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isDeleted', 'deletedAt']))
+            ||
+            // 受信者: 既読フラグの更新
+            (resource.data.senderId != request.auth.uid &&
+             request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isRead', 'readAt']))
+          );
 
-        // 物理削除は禁止（論理削除のみ）
+        // 削除: 不可（論理削除のみ）
         allow delete: if false;
       }
     }
 
-    // ========================================
-    // 課金情報
-    // ========================================
-    match /subscriptions/{subscriptionId} {
-      // 自分の課金情報のみ読み取り可能
-      allow read: if request.auth != null
-        && resource.data.userId == request.auth.uid;
+    // ============================================
+    // friendships コレクション
+    // ============================================
+    match /friendships/{friendshipId} {
+      // 読み取り: 当事者のみ
+      allow read: if isFriendshipMember(resource.data);
 
-      // 書き込みはCloud Functionsのみ
-      allow write: if false;
+      // 作成: 認証済みで、自分がrequesterである
+      allow create: if isAuthenticated() &&
+        request.resource.data.requesterId == request.auth.uid &&
+        request.resource.data.status == 'pending';
+
+      // 更新: 当事者のみ
+      allow update: if isFriendshipMember(resource.data) &&
+        (
+          // 受信者: ステータスをpendingからacceptedに変更
+          (resource.data.receiverId == request.auth.uid &&
+           resource.data.status == 'pending' &&
+           request.resource.data.status == 'accepted')
+          ||
+          // 当事者: ブロック操作
+          (request.resource.data.status == 'blocked' &&
+           request.resource.data.blockedBy == request.auth.uid)
+          ||
+          // ブロック解除（ブロックした人のみ）
+          (resource.data.status == 'blocked' &&
+           resource.data.blockedBy == request.auth.uid &&
+           request.resource.data.status == 'accepted' &&
+           request.resource.data.blockedBy == null)
+        );
+
+      // 削除: 当事者のみ（友達解除・申請拒否）
+      allow delete: if isFriendshipMember(resource.data);
+    }
+
+    // ============================================
+    // subscriptions コレクション
+    // ============================================
+    match /subscriptions/{userId} {
+      // 読み取り: 自分のみ
+      allow read: if isOwner(userId);
+
+      // 作成・更新・削除: Cloud Functions経由のみ
+      allow create, update, delete: if false;
     }
   }
 }

@@ -5,17 +5,13 @@
  */
 
 // Auth Functions
-// export * from './auth/onCreate';
-// export * from './auth/onDelete';
+export * from './auth';
 
 // Messaging Functions
-// export * from './messaging/onMessageCreate';
-// export * from './messaging/sendNotification';
+export * from './messaging';
 
 // Friends Functions
-// export * from './friends/sendRequest';
-// export * from './friends/respondRequest';
-// export * from './friends/blockUser';
+export * from './friends';
 
 // Subscription Functions
 // export * from './subscription/verifyReceipt';
@@ -27,6 +23,3 @@
 
 // Panic Functions
 // export * from './panic/deleteAll';
-
-// Placeholder export to prevent empty module error
-export const placeholder = 'WorkOutApp Functions initialized';

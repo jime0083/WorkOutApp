@@ -1,0 +1,32 @@
+/**
+ * ChatRoomPage スタイル
+ */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background-color: var(--color-chat-background);
+}
+
+.loadingContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  min-height: 300px;
+}
+
+.errorContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  padding: 32px;
+}
+
+.errorText {
+  font-size: 14px;
+  color: var(--color-error);
+  text-align: center;
+}

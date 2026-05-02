@@ -45,72 +45,6 @@ Manual Work 1 → Manual Work 2 → Phase 1〜3
 
 ---
 
-## Work 3: APNs 証明書設定
-必要なタイミング: **Phase 10 開始前**
-
-### 3.1 APNs 認証キー作成
-- [ ] Apple Developer Portal（https://developer.apple.com/）にアクセス
-- [ ] Certificates, Identifiers & Profiles → Keys
-- [ ] 新規キー作成
-  - [ ] Key Name: WorkOutApp APNs Key
-  - [ ] Apple Push Notifications service (APNs) にチェック
-- [ ] キーファイル（.p8）ダウンロード
-- [ ] Key ID 記録
-- [ ] Team ID 記録
-
-### 3.2 Firebase への APNs 設定
-- [ ] Firebase Console → プロジェクト設定 → Cloud Messaging
-- [ ] APNs認証キーをアップロード
-  - [ ] .p8 ファイルアップロード
-  - [ ] Key ID 入力
-  - [ ] Team ID 入力
-
-### 3.3 App ID 設定
-- [ ] Apple Developer Portal → Identifiers
-- [ ] App ID 作成または編集
-  - [ ] Bundle ID: com.yourcompany.workoutapp
-  - [ ] Push Notifications を有効化
-
----
-
-## Work 4: In-App Purchase 商品登録
-必要なタイミング: **Phase 9 開始前**
-
-### 4.1 App Store Connect アプリ作成
-- [ ] App Store Connect（https://appstoreconnect.apple.com/）にアクセス
-- [ ] 新規アプリ作成
-  - [ ] プラットフォーム: iOS
-  - [ ] アプリ名: WorkOutApp（仮）
-  - [ ] プライマリ言語: 日本語
-  - [ ] Bundle ID: 選択
-  - [ ] SKU: workoutapp001（任意）
-
-### 4.2 App 内課金商品登録
-- [ ] App Store Connect → アプリ → App 内課金
-- [ ] 月額サブスクリプション作成
-  - [ ] 参照名: 月額プレミアム
-  - [ ] 製品ID: com.workoutapp.subscription.monthly
-  - [ ] サブスクリプショングループ作成
-  - [ ] 価格: ¥500
-  - [ ] ローカライズ情報入力
-- [ ] 年額サブスクリプション作成
-  - [ ] 参照名: 年額プレミアム
-  - [ ] 製品ID: com.workoutapp.subscription.yearly
-  - [ ] 同じサブスクリプショングループに追加
-  - [ ] 価格: ¥5,000
-  - [ ] ローカライズ情報入力
-
-### 4.3 Shared Secret 取得
-- [ ] App Store Connect → アプリ → App 内課金 → App 共有シークレット
-- [ ] 共有シークレット生成
-- [ ] シークレットを Firebase Functions 環境変数に設定
-
-### 4.4 Sandbox テスター作成
-- [ ] App Store Connect → ユーザとアクセス → Sandbox → テスター
-- [ ] テスター追加（テスト用メールアドレス）
-
----
-
 ## Work 5: GitHub Pages 設定
 必要なタイミング: **Phase 13 開始前**
 
@@ -160,15 +94,24 @@ Manual Work 1 → Manual Work 2 → Phase 1〜3
 ## Work 7: App Store 審査提出
 必要なタイミング: **Phase 14 と並行して実施**
 
-### 7.1 App Store 情報入力
+### 7.1 App Store 情報入力（日本語）
 - [ ] App Store Connect → アプリ → App Store
 - [ ] スクリーンショット準備・アップロード
   - [ ] 6.5インチ（iPhone 14 Pro Max等）
   - [ ] 5.5インチ（iPhone 8 Plus等）
-- [ ] アプリ説明文入力
-- [ ] キーワード設定
+- [ ] アプリ説明文入力（日本語）
+- [ ] キーワード設定（日本語）
 - [ ] サポートURL
 - [ ] プライバシーポリシーURL
+
+### 7.1.1 App Store 情報入力（英語）
+- [ ] App Store Connect → アプリ → App Store → ローカライズ追加
+- [ ] English (U.S.) を追加
+- [ ] スクリーンショット準備・アップロード（英語テキスト用）
+  - [ ] 6.5インチ
+  - [ ] 5.5インチ
+- [ ] アプリ説明文入力（英語）
+- [ ] キーワード設定（英語）
 
 ### 7.2 App Review 情報
 - [ ] 連絡先情報入力

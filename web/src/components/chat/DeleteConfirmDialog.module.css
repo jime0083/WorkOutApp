@@ -1,0 +1,87 @@
+/**
+ * DeleteConfirmDialog スタイル
+ */
+
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: var(--z-modal);
+  padding: 16px;
+}
+
+.dialog {
+  background-color: var(--color-surface);
+  border-radius: var(--radius-lg);
+  max-width: 320px;
+  width: 100%;
+  padding: 24px;
+}
+
+.title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0 0 12px 0;
+  text-align: center;
+}
+
+.message {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+  margin: 0 0 20px 0;
+  text-align: center;
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+}
+
+.cancelButton,
+.deleteButton {
+  flex: 1;
+  padding: 12px 16px;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.cancelButton {
+  background-color: var(--color-gray-200);
+  color: var(--color-text-primary);
+}
+
+.cancelButton:hover:not(:disabled) {
+  background-color: var(--color-gray-300);
+}
+
+.deleteButton {
+  background-color: var(--color-error);
+  color: white;
+}
+
+.deleteButton:hover:not(:disabled) {
+  filter: brightness(0.9);
+}
+
+.cancelButton:active:not(:disabled),
+.deleteButton:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.cancelButton:disabled,
+.deleteButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

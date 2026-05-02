@@ -1,0 +1,54 @@
+/**
+ * MessageContextMenu スタイル
+ */
+
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: var(--z-dropdown);
+}
+
+.menu {
+  position: fixed;
+  background-color: var(--color-surface);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  min-width: 150px;
+  padding: 8px 0;
+  z-index: calc(var(--z-dropdown) + 1);
+}
+
+.menuItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 16px;
+  border: none;
+  background-color: transparent;
+  font-size: 14px;
+  color: var(--color-text-primary);
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.15s ease;
+}
+
+.menuItem:hover:not(:disabled) {
+  background-color: var(--color-background-hover);
+}
+
+.menuItem.danger {
+  color: var(--color-error);
+}
+
+.menuItem.disabled {
+  color: var(--color-text-disabled);
+  cursor: not-allowed;
+}
+
+.icon {
+  font-size: 16px;
+}

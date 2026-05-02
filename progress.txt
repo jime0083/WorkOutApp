@@ -21,193 +21,31 @@
 
 ---
 
-## Phase 2: 共通基盤（型定義・ユーティリティ）
-前提: Phase 1 完了後
+## Phase 8.5: 国際化（i18n）
+前提: Phase 8 完了後
 
-### 2.1 型定義（共通）
-- [ ] User 型定義
-- [ ] Message 型定義
-- [ ] Conversation 型定義
-- [ ] Friendship 型定義
-- [ ] Subscription 型定義
-- [ ] エラーコード定義
+### 8.5.1 Web アプリ国際化
+- [ ] react-i18next 導入
+- [ ] 翻訳ファイル構成作成（locales/ja.json, locales/en.json）
+- [ ] 既存コンポーネントのテキスト国際化対応
+- [ ] 言語切り替えUI実装（設定画面）
+- [ ] ブラウザ言語自動検出
 
-### 2.2 iOS アプリ共通
-- [ ] テーマ定義（colors, typography）
-- [ ] 共通コンポーネント: Button
-- [ ] 共通コンポーネント: Input
-- [ ] 共通コンポーネント: Card
-- [ ] 共通コンポーネント: Loading
+### 8.5.2 iOS アプリ国際化
+- [ ] react-i18next 導入
+- [ ] 翻訳ファイル構成作成
+- [ ] 既存コンポーネントのテキスト国際化対応
+- [ ] 言語切り替えUI実装（設定画面）
+- [ ] デバイス言語自動検出
 
-### 2.3 Web アプリ共通
-- [ ] テーマ定義（CSS変数）
-- [ ] グローバルスタイル作成
-- [ ] 共通コンポーネント: Button
-- [ ] 共通コンポーネント: Input
-- [ ] 共通コンポーネント: Modal
-- [ ] 共通コンポーネント: Avatar
-- [ ] 共通コンポーネント: Loading
-
----
-
-## Phase 3: Firebase 基盤設定
-前提: Phase 2 完了後、Manual Work 2 完了後
-
-### 3.1 Firestore
-- [ ] Firestore Security Rules 作成
-- [ ] インデックス設定（firestore.indexes.json）
-
-### 3.2 Storage
-- [ ] Storage Security Rules 作成
-
-### 3.3 Cloud Functions 基盤
-- [ ] Firebase Admin 初期化
-- [ ] 共通ユーティリティ作成（エラーハンドリング等）
-
----
-
-## Phase 4: 認証機能
-前提: Phase 3 完了後
-
-### 4.1 Firebase 認証設定
-- [ ] iOS アプリ: Firebase SDK 導入
-- [ ] Web アプリ: Firebase SDK 導入
-- [ ] 認証サービス作成（auth.ts）
-
-### 4.2 Cloud Functions（認証）
-- [ ] createUser: ユーザー作成時トリガー
-- [ ] deleteUser: ユーザー削除時トリガー
-
-### 4.3 iOS 認証画面
-- [ ] ログイン画面（LoginScreen）
-- [ ] 新規登録画面（RegisterScreen）
-- [ ] ダミー/本命パスワード判定ロジック
-- [ ] 認証状態管理（authStore）
-
-### 4.4 Web 認証画面
-- [ ] ログイン画面（LoginPage）
-- [ ] 新規登録画面（RegisterPage）
-- [ ] 認証状態管理（authStore）
-- [ ] ProtectedRoute / PublicRoute 実装
-
----
-
-## Phase 5: iOS アプリ（ダミー画面）
-前提: Phase 4 完了後
-
-### 5.1 ダミー運動データ
-- [ ] 固定サンプルデータ定義（dummyData.ts）
-
-### 5.2 ダミーUI コンポーネント
-- [ ] HealthCard コンポーネント
-- [ ] StepCounter コンポーネント
-- [ ] ActivityRing コンポーネント（Apple Watch風）
-- [ ] 週間グラフコンポーネント
-
-### 5.3 ダミー画面
-- [ ] DummyHomeScreen（ホーム画面）
-- [ ] DummyStatsScreen（統計画面）
-- [ ] DummySettingsScreen（設定画面）
-
-### 5.4 ナビゲーション
-- [ ] RootNavigator
-- [ ] AuthNavigator
-- [ ] MainNavigator（ダミー画面用）
-
-### 5.5 外部ブラウザ遷移
-- [ ] Safari起動ロジック実装（本命パスワード認証後）
-
----
-
-## Phase 6: Web アプリ基盤
-前提: Phase 4 完了後
-
-### 6.1 ルーティング
-- [ ] React Router 設定
-- [ ] ルート定義（routes/index.tsx）
-
-### 6.2 レイアウト
-- [ ] Header コンポーネント
-- [ ] BottomNav コンポーネント
-- [ ] Layout コンポーネント
-
-### 6.3 状態管理
-- [ ] Zustand セットアップ
-- [ ] uiStore（UI状態管理）
-
----
-
-## Phase 7: メッセージング機能
-前提: Phase 6 完了後
-
-### 7.1 Cloud Functions（メッセージ）
-- [ ] onMessageCreate: メッセージ作成時トリガー
-- [ ] メッセージ送信上限チェックロジック
-
-### 7.2 Web サービス層
-- [ ] message.ts（メッセージサービス）
-- [ ] useMessages フック
-- [ ] useConversations フック
-- [ ] useMessageLimit フック
-
-### 7.3 Web メッセージ UI
-- [ ] ConversationListPage（トーク一覧）
-- [ ] ConversationItem コンポーネント
-- [ ] ChatRoomPage（トークルーム）
-- [ ] MessageBubble コンポーネント
-- [ ] MessageInput コンポーネント
-- [ ] MessageList コンポーネント
-
-### 7.4 メディア送信（課金機能）
-- [ ] ImagePreview コンポーネント
-- [ ] VideoPlayer コンポーネント
-- [ ] 画像アップロード機能
-- [ ] 動画アップロード機能
-- [ ] 課金チェックロジック（画像/動画送信時）
-
-### 7.5 メッセージ削除・取消
-- [ ] メッセージ削除UI
-- [ ] 送信取消ロジック
-- [ ] 課金チェックロジック（削除/取消時）
-
-### 7.6 メッセージ検索
-- [ ] 検索UI実装
-- [ ] 検索ロジック実装
-
-### 7.7 既読機能
-- [ ] 既読状態更新ロジック
-- [ ] 既読表示UI
-
----
-
-## Phase 8: 友達機能
-前提: Phase 7 完了後
-
-### 8.1 Cloud Functions（友達）
-- [ ] sendFriendRequest: 友達申請送信
-- [ ] respondToFriendRequest: 友達申請応答
-- [ ] blockUser: ユーザーブロック
-
-### 8.2 Web サービス層
-- [ ] friend.ts（友達サービス）
-- [ ] useFriends フック
-
-### 8.3 Web 友達 UI
-- [ ] FriendListPage（友達一覧）
-- [ ] FriendItem コンポーネント
-- [ ] AddFriendPage（友達追加）
-- [ ] FriendRequestPage（友達申請一覧）
-- [ ] FriendRequestItem コンポーネント
-- [ ] ブロック機能UI
-
-### 8.4 プロフィール
-- [ ] ProfileEditPage（プロフィール編集）
-- [ ] プロフィール画像アップロード
+### 8.5.3 Cloud Functions 国際化
+- [ ] エラーメッセージ多言語対応
+- [ ] 通知メッセージ多言語対応
 
 ---
 
 ## Phase 9: 課金機能
-前提: Phase 8 完了後、Manual Work 4 完了後
+前提: Phase 8.5 完了後、Manual Work 4 完了後
 
 ### 9.1 Cloud Functions（課金）
 - [ ] verifyAppleReceipt: レシート検証

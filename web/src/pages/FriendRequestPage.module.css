@@ -1,0 +1,100 @@
+/**
+ * FriendRequestPage スタイル
+ */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background-color: var(--color-background-secondary);
+}
+
+.tabs {
+  display: flex;
+  background-color: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.tab {
+  flex: 1;
+  padding: 14px 16px;
+  border: none;
+  background-color: transparent;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: color 0.2s ease;
+  position: relative;
+}
+
+.tab.active {
+  color: var(--color-primary);
+}
+
+.tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: var(--color-primary);
+}
+
+.count {
+  margin-left: 4px;
+  padding: 2px 6px;
+  background-color: var(--color-primary);
+  color: white;
+  border-radius: 10px;
+  font-size: 12px;
+}
+
+.tab:not(.active) .count {
+  background-color: var(--color-gray-400);
+}
+
+.loadingContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex: 1;
+  min-height: 200px;
+}
+
+.emptyContainer {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  flex: 1;
+  padding: 32px;
+  text-align: center;
+}
+
+.emptyIcon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.emptyText {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.errorMessage {
+  background-color: var(--color-error-bg);
+  color: var(--color-error);
+  padding: 12px 16px;
+  font-size: 14px;
+  text-align: center;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  background-color: var(--color-surface);
+}

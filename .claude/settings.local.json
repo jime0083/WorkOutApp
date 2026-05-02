@@ -6,7 +6,8 @@
       "Bash(npx @react-native-community/cli@latest init:*)",
       "Bash(pod install)",
       "Bash(npm install:*)",
-      "Bash(npm create:*)"
+      "Bash(npm create:*)",
+      "Bash(npx tsc:*)"
     ]
   }
 }
