@@ -48,22 +48,212 @@ YYYY-MM-DD
 
 | # | タイトル | 発生日 | ステータス | 関連Phase/Work |
 |---|----------|--------|------------|----------------|
-| - | -        | -      | -          | -              |
+| 1 | Webアプリビルドエラー（複数の型エラー・未実装モジュール） | 2026-05-02 | 解決済み | Phase 8.5 |
 
 ---
 
 ## 問題記録
 
-（以下に問題を追加していく）
+## Problem #1: Webアプリビルドエラー（複数の型エラー・未実装モジュール）
+発生日: 2026-05-02
+関連Phase/Work: Phase 8.5（国際化）実装中に発見
+ステータス: 解決済み
+
+### 問題の詳細
+Phase 8.5の国際化実装後、`npm run build` を実行したところ、30以上のTypeScriptエラーが発生しビルドが失敗した。
+
+**エラー一覧:**
+```
+1. 存在しないモジュールのインポート (4件)
+   - src/routes/index.tsx: ProfilePage, SubscriptionPage, SettingsPage, AuthCallbackPage
+
+2. Firebase Functions エクスポート漏れ (3件)
+   - useMessageLimit.ts, friend.ts, message.ts: 'functions' が firebase.ts からエクスポートされていない
+
+3. LoadingSize 型の不一致 (7件)
+   - 複数のファイルで "large", "small" を使用しているが、型定義は 'sm' | 'md' | 'lg'
+
+4. FullScreenLoading の visible プロパティ欠落 (1件)
+   - routes/index.tsx: <FullScreenLoading /> に visible が渡されていない
+
+5. verbatimModuleSyntax 関連 (4件)
+   - auth.ts, authStore.ts: 型のみのインポートに `import type` が必要
+
+6. AuthState エクスポート問題 (1件)
+   - stores/index.ts: AuthState が authStore.ts からエクスポートされていない
+
+7. 未使用変数 (6件)
+   - MediaPreview.tsx: useCallback
+   - AddFriendPage.tsx, ProfileEditPage.tsx: navigate
+   - message.ts: Timestamp, QueryDocumentSnapshot, CreateMessageInput, Conversation
+
+8. Date/Timestamp 変換問題 (4件)
+   - ConversationItem.tsx, MessageBubble.tsx, MessageList.tsx, MessageSearch.tsx
+
+9. uiStore.ts の型問題 (1件)
+   - null が string | undefined に割り当てられない
+```
+
+### 原因分析
+
+#### 根本原因1: 先行実装の問題
+routes/index.tsx で Phase 9, 11 で実装予定のページ（SubscriptionPage, SettingsPage等）を先にインポートしていた。
+→ ルート定義を先行して作成したが、対応するページ実装が追いついていない
+
+#### 根本原因2: Firebase Functions 設定漏れ
+firebase.ts で Cloud Functions のインスタンス（getFunctions）を初期化・エクスポートしていない。
+→ Phase 7-8 の実装時に Functions を使用するコードを書いたが、firebase.ts の更新を忘れた
+
+#### 根本原因3: 型定義の不整合
+Loading コンポーネントの型定義（'sm' | 'md' | 'lg'）と使用側（'small' | 'large'）が一致していない。
+→ コンポーネント作成時と使用時で命名規則が統一されていなかった
+
+#### 根本原因4: TypeScript 設定の厳格化
+verbatimModuleSyntax が有効な状態で、型インポートの書式が厳格に要求されている。
+→ TypeScript 6.0 の厳格な設定に対応していないコードが残っていた
+
+#### 根本原因5: 開発中の未使用コード
+開発途中で使用予定だったインポートや変数が残っている。
+→ 開発フェーズ間の整理が不十分
+
+### 修正計画
+
+#### Phase A: 即座に修正が必要（ビルドを通すため）
+
+**A-1. 未実装ページの仮実装またはルート削除**
+- 選択肢1: ProfilePage, SubscriptionPage, SettingsPage, AuthCallbackPage の仮ページを作成
+- 選択肢2: routes/index.tsx から未実装ページのルートを一時的にコメントアウト
+- **推奨**: 選択肢2（仮ページを作成すると後で混乱する可能性）
+
+**A-2. Firebase Functions のエクスポート追加**
+```typescript
+// firebase.ts に追加
+import { getFunctions, connectFunctionsEmulator } from 'firebase/functions';
+export const functions = getFunctions(app);
+```
+
+**A-3. Loading 型定義の修正**
+```typescript
+// Loading.tsx の型を変更
+type LoadingSize = 'small' | 'medium' | 'large';
+// または使用側を 'sm' | 'md' | 'lg' に統一
+```
+- **推奨**: 使用側を 'sm' | 'md' | 'lg' に統一（既存の型定義を維持）
+
+**A-4. FullScreenLoading の修正**
+```typescript
+// 選択肢1: visible をオプショナルにする（デフォルト true）
+interface FullScreenLoadingProps {
+  visible?: boolean;  // デフォルト true
+  text?: string;
+}
+
+// 選択肢2: Suspense用のラッパーコンポーネントを作成
+export const SuspenseLoading: React.FC = () => <FullScreenLoading visible />;
+```
+- **推奨**: 選択肢1（シンプル）
+
+**A-5. verbatimModuleSyntax 対応**
+```typescript
+// auth.ts, authStore.ts で修正
+import type { User, UserCredential } from 'firebase/auth';
+```
+
+**A-6. AuthState エクスポート**
+```typescript
+// authStore.ts に追加
+export interface AuthState { ... }
+// または stores/index.ts から削除
+```
+
+**A-7. 未使用変数の削除**
+- 各ファイルから未使用のインポートと変数を削除
+
+**A-8. Date/Timestamp 変換の修正**
+- Firestore Timestamp の `toDate()` メソッドを正しく使用するよう修正
+
+**A-9. uiStore の型修正**
+- setGlobalLoading の message パラメータの型を修正
+
+#### Phase B: 今後の再発防止
+
+1. **新しいルートを追加する際のルール追加**
+   - ページが実装されていない状態でルート定義を追加しない
+   - または、プレースホルダーページを必ず同時に作成する
+
+2. **ビルドチェックの徹底**
+   - 各Phase完了時に必ず `npm run build` を実行してビルドが通ることを確認
+
+3. **型定義の命名規則統一**
+   - サイズ表現は 'sm' | 'md' | 'lg' または 'small' | 'medium' | 'large' に統一
+
+### 試したアプローチ
+1. 修正計画に従い、各エラーカテゴリごとに順番に修正 → 成功
+
+### 採用した解決策
+
+**A-1. 未実装ページのルート修正**
+- routes/index.tsx から未実装ページ（SubscriptionPage, SettingsPage, AuthCallbackPage）のルートをコメントアウト
+- ProfilePage → ProfileEditPage に変更（既存の実装を使用）
+
+**A-2. Firebase Functions エクスポート追加**
+- firebase.ts に `getFunctions` をインポートし、`functions` をエクスポート
+- リージョンを `asia-northeast1` に設定
+
+**A-3/A-4. Loadingコンポーネント修正**
+- FullScreenLoading の `visible` プロパティをオプショナルに変更（デフォルト true）
+- 使用側のサイズを `'large'` → `'lg'`、`'small'` → `'sm'` に統一
+
+**A-5/A-6. 型インポート修正**
+- auth.ts: `import type { User as FirebaseUser, UserCredential }` に修正
+- authStore.ts: `import type { User as FirebaseUser }` と `import type { LoginResult }` に分離
+- authStore.ts: `AuthState` インターフェースを export
+
+**A-7. 未使用変数の削除**
+- MediaPreview.tsx: `useCallback` を削除
+- AddFriendPage.tsx, ProfileEditPage.tsx: `useNavigate` / `navigate` を削除
+- message.ts: `Timestamp`, `QueryDocumentSnapshot`, `CreateMessageInput`, `Conversation` を削除
+
+**A-8. Date/Timestamp 変換修正**
+- ConversationItem.tsx, MessageBubble.tsx, MessageList.tsx, MessageSearch.tsx の toDate 関数を修正
+- `unknown` を経由した型アサーションで Firestore Timestamp と Date の両方に対応
+
+**A-9. uiStore 型修正**
+- `setGlobalLoading` のデフォルト値を `null` から `undefined` に変更し、`??` 演算子で処理
+
+### 再発防止策
+1. Phase完了時のビルドチェックを必須とする
+2. ルート定義は対応するページ実装と同時に行う
+3. 型定義の命名規則をドキュメント化する
+4. TypeScript の厳格モードに対応したコーディングを徹底する
+5. CLAUDE.md にプロジェクト固有の問題対応フローを追加済み
+
+### 学んだこと
+1. **先行実装の危険性**: 未実装のページをルートに追加すると、ビルド時にエラーになる。必ず実装とルート定義はセットで行う。
+2. **型定義の統一の重要性**: コンポーネント作成時に型定義を決めたら、使用側も同じ規則に従う必要がある。
+3. **verbatimModuleSyntax**: TypeScript 6.0 以降は型のみのインポートに `import type` を使用する必要がある。
+4. **Firestore Timestamp**: Date と Timestamp の両方に対応するには、`instanceof Date` チェックと `unknown` を経由した型アサーションが有効。
+5. **Phase完了時のビルドチェック**: 各Phase完了時に必ず `npm run build` を実行することで、問題の早期発見が可能。
+
+### 解決日
+2026-05-02
 
 ---
 
 ## 過去に発生した問題からの教訓
 
-（問題解決後、ここに教訓を蓄積していく）
+### Problem #1 からの教訓
+1. **ルート定義と実装は必ずセット**: 未実装ページのルートを先に追加しない
+2. **型定義は最初に統一**: 'sm'|'md'|'lg' か 'small'|'medium'|'large' かを最初に決める
+3. **Phase完了時にビルドチェック**: `npm run build` を必ず実行
+4. **TypeScript 厳格モード対応**: `import type` を型のみのインポートに使用
+5. **Firebase設定は使用時に確認**: 新機能追加時に firebase.ts のエクスポートを確認
 
 ---
 
 ## 避けるべきアプローチ
 
-（効果がなかったアプローチをここに記録し、同じ無駄な作業を繰り返さない）
+### 一般的な注意
+- 仮実装ページの作成（後で混乱の原因になる）
+- ビルドチェックなしでのPhase完了宣言
+- 型定義を変更せずに使用側だけを修正（整合性が取れなくなる）

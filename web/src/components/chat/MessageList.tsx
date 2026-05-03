@@ -2,6 +2,7 @@
  * MessageList - メッセージリストコンポーネント
  */
 import React, { useRef, useEffect, useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { Message } from '../../types/message';
 import type { UserProfile } from '../../types/user';
 import { MessageBubble } from './MessageBubble';
@@ -12,11 +13,16 @@ import { isSameDay } from '../../utils/date';
 import styles from './MessageList.module.css';
 
 // Firestore Timestamp型のガード
-const toDate = (dateValue: Date | { toDate: () => Date }): Date => {
-  if (dateValue && typeof (dateValue as { toDate?: () => Date }).toDate === 'function') {
-    return (dateValue as { toDate: () => Date }).toDate();
+const toDate = (dateValue: Date | unknown): Date => {
+  if (dateValue instanceof Date) {
+    return dateValue;
   }
-  return dateValue instanceof Date ? dateValue : new Date(dateValue);
+  // Firestore Timestamp の場合
+  const timestamp = dateValue as { toDate?: () => Date };
+  if (timestamp && typeof timestamp.toDate === 'function') {
+    return timestamp.toDate();
+  }
+  return new Date();
 };
 
 interface MessageListProps {
@@ -43,6 +49,7 @@ export const MessageList: React.FC<MessageListProps> = ({
   partnerProfile,
   isPremium = false,
 }) => {
+  const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const isLoadingMore = useRef(false);
@@ -145,7 +152,7 @@ export const MessageList: React.FC<MessageListProps> = ({
       >
         {hasMore && (
           <div className={styles.loadMoreIndicator}>
-            過去のメッセージを読み込み中...
+            {t('chat.loadingMore')}
           </div>
         )}
 

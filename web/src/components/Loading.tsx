@@ -14,7 +14,7 @@ interface LoadingProps {
 }
 
 interface FullScreenLoadingProps {
-  visible: boolean;
+  visible?: boolean;
   text?: string;
 }
 
@@ -34,7 +34,7 @@ export const Loading: React.FC<LoadingProps> = ({
 
 // フルスクリーンローディング
 export const FullScreenLoading: React.FC<FullScreenLoadingProps> = ({
-  visible,
+  visible = true,
   text,
 }) => {
   if (!visible) return null;

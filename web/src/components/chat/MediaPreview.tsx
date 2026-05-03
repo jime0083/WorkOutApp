@@ -2,7 +2,8 @@
  * MediaPreview - メディアプレビューコンポーネント
  * 送信前の画像・動画プレビューとキャンセル機能
  */
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import styles from './MediaPreview.module.css';
 
 interface MediaPreviewProps {
@@ -18,6 +19,7 @@ export const MediaPreview: React.FC<MediaPreviewProps> = ({
   onCancel,
   isSending,
 }) => {
+  const { t } = useTranslation();
   const [previewUrl] = useState(() => URL.createObjectURL(file));
   const isVideo = file.type.startsWith('video/');
   const isImage = file.type.startsWith('image/');
@@ -41,13 +43,13 @@ export const MediaPreview: React.FC<MediaPreviewProps> = ({
       <div className={styles.container}>
         <div className={styles.header}>
           <h3 className={styles.title}>
-            {isVideo ? '動画を送信' : '画像を送信'}
+            {isVideo ? t('chat.sendVideo') : t('chat.sendImage')}
           </h3>
           <button
             className={styles.closeButton}
             onClick={onCancel}
             disabled={isSending}
-            aria-label="閉じる"
+            aria-label={t('common.close')}
           >
             ✕
           </button>
@@ -57,7 +59,7 @@ export const MediaPreview: React.FC<MediaPreviewProps> = ({
           {isImage && (
             <img
               src={previewUrl}
-              alt="プレビュー"
+              alt={t('chat.preview')}
               className={styles.previewImage}
             />
           )}
@@ -81,14 +83,14 @@ export const MediaPreview: React.FC<MediaPreviewProps> = ({
             onClick={onCancel}
             disabled={isSending}
           >
-            キャンセル
+            {t('common.cancel')}
           </button>
           <button
             className={styles.confirmButton}
             onClick={onConfirm}
             disabled={isSending}
           >
-            {isSending ? '送信中...' : '送信'}
+            {isSending ? t('common.sending') : t('common.send')}
           </button>
         </div>
       </div>

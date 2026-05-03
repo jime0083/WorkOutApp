@@ -2,6 +2,7 @@
  * MessageSearch - メッセージ検索コンポーネント
  */
 import React, { useState, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { Message } from '../../types/message';
 import { formatDateSeparator } from '../../utils/date';
 import styles from './MessageSearch.module.css';
@@ -17,6 +18,7 @@ export const MessageSearch: React.FC<MessageSearchProps> = ({
   onSelectMessage,
   onClose,
 }) => {
+  const { t } = useTranslation();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Message[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -64,13 +66,19 @@ export const MessageSearch: React.FC<MessageSearchProps> = ({
   );
 
   // メッセージ日時をフォーマット
-  const formatMessageDate = (dateValue: Date | { toDate: () => Date }): string => {
-    const date =
-      dateValue && typeof (dateValue as { toDate?: () => Date }).toDate === 'function'
-        ? (dateValue as { toDate: () => Date }).toDate()
-        : dateValue instanceof Date
-        ? dateValue
-        : new Date(dateValue);
+  const formatMessageDate = (dateValue: Date | unknown): string => {
+    let date: Date;
+    if (dateValue instanceof Date) {
+      date = dateValue;
+    } else {
+      // Firestore Timestamp の場合
+      const timestamp = dateValue as { toDate?: () => Date };
+      if (timestamp && typeof timestamp.toDate === 'function') {
+        date = timestamp.toDate();
+      } else {
+        date = new Date();
+      }
+    }
     return formatDateSeparator(date);
   };
 
@@ -93,7 +101,7 @@ export const MessageSearch: React.FC<MessageSearchProps> = ({
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <button className={styles.backButton} onClick={onClose} aria-label="戻る">
+        <button className={styles.backButton} onClick={onClose} aria-label={t('common.back')}>
           ←
         </button>
         <div className={styles.searchInputWrapper}>
@@ -103,7 +111,7 @@ export const MessageSearch: React.FC<MessageSearchProps> = ({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="メッセージを検索..."
+            placeholder={t('chat.searchMessages')}
             className={styles.searchInput}
             autoFocus
           />
@@ -111,7 +119,7 @@ export const MessageSearch: React.FC<MessageSearchProps> = ({
             <button
               className={styles.clearButton}
               onClick={() => setQuery('')}
-              aria-label="クリア"
+              aria-label={t('chat.clear')}
             >
               ✕
             </button>
@@ -122,18 +130,18 @@ export const MessageSearch: React.FC<MessageSearchProps> = ({
           onClick={handleSearch}
           disabled={!query.trim() || isSearching}
         >
-          検索
+          {t('common.search')}
         </button>
       </div>
 
       <div className={styles.results}>
         {isSearching && (
-          <div className={styles.loading}>検索中...</div>
+          <div className={styles.loading}>{t('common.searching')}</div>
         )}
 
         {!isSearching && hasSearched && results.length === 0 && (
           <div className={styles.noResults}>
-            「{query}」に一致するメッセージはありません
+            {t('chat.noSearchResults', { query })}
           </div>
         )}
 
@@ -158,7 +166,7 @@ export const MessageSearch: React.FC<MessageSearchProps> = ({
 
         {!isSearching && !hasSearched && (
           <div className={styles.hint}>
-            キーワードを入力して検索してください
+            {t('chat.searchHint')}
           </div>
         )}
       </div>

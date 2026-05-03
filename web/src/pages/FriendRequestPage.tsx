@@ -2,6 +2,7 @@
  * FriendRequestPage - 友達申請一覧ページ
  */
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../stores/authStore';
 import { useFriends } from '../hooks/useFriends';
 import { FriendRequestItem } from '../components/friends/FriendRequestItem';
@@ -11,6 +12,7 @@ import styles from './FriendRequestPage.module.css';
 type TabType = 'received' | 'sent';
 
 export const FriendRequestPage: React.FC = () => {
+  const { t } = useTranslation();
   const { user } = useAuthStore();
   const [activeTab, setActiveTab] = useState<TabType>('received');
 
@@ -37,7 +39,7 @@ export const FriendRequestPage: React.FC = () => {
           className={`${styles.tab} ${activeTab === 'received' ? styles.active : ''}`}
           onClick={() => setActiveTab('received')}
         >
-          受信した申請
+          {t('friendRequest.received')}
           {receivedRequests.length > 0 && (
             <span className={styles.count}>{receivedRequests.length}</span>
           )}
@@ -46,7 +48,7 @@ export const FriendRequestPage: React.FC = () => {
           className={`${styles.tab} ${activeTab === 'sent' ? styles.active : ''}`}
           onClick={() => setActiveTab('sent')}
         >
-          送信した申請
+          {t('friendRequest.sent')}
           {sentRequests.length > 0 && (
             <span className={styles.count}>{sentRequests.length}</span>
           )}
@@ -63,7 +65,7 @@ export const FriendRequestPage: React.FC = () => {
       {/* コンテンツ */}
       {isLoading ? (
         <div className={styles.loadingContainer}>
-          <Loading size="large" />
+          <Loading size="lg" />
         </div>
       ) : requests.length === 0 ? (
         <div className={styles.emptyContainer}>
@@ -72,8 +74,8 @@ export const FriendRequestPage: React.FC = () => {
           </div>
           <p className={styles.emptyText}>
             {activeTab === 'received'
-              ? '受信した友達申請はありません'
-              : '送信した友達申請はありません'}
+              ? t('friendRequest.noReceived')
+              : t('friendRequest.noSent')}
           </p>
         </div>
       ) : (

@@ -2,17 +2,17 @@
  * 認証状態管理ストア
  */
 import { create } from 'zustand';
-import { User as FirebaseUser } from 'firebase/auth';
+import type { User as FirebaseUser } from 'firebase/auth';
 import {
   loginWithEmail,
   logout as authLogout,
   onAuthStateChanged,
   getUserDocument,
-  LoginResult,
 } from '../services/auth';
+import type { LoginResult } from '../services/auth';
 import type { User } from '../types/user';
 
-interface AuthState {
+export interface AuthState {
   // 状態
   user: FirebaseUser | null;
   userDocument: User | null;

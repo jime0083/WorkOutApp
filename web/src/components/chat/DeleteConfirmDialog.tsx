@@ -2,6 +2,7 @@
  * DeleteConfirmDialog - メッセージ削除確認ダイアログ
  */
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import styles from './DeleteConfirmDialog.module.css';
 
 interface DeleteConfirmDialogProps {
@@ -15,14 +16,16 @@ export const DeleteConfirmDialog: React.FC<DeleteConfirmDialogProps> = ({
   onCancel,
   isDeleting,
 }) => {
+  const { t } = useTranslation();
+
   return (
     <div className={styles.overlay}>
       <div className={styles.dialog}>
-        <h3 className={styles.title}>メッセージを削除</h3>
+        <h3 className={styles.title}>{t('chat.deleteMessage')}</h3>
         <p className={styles.message}>
-          このメッセージを削除しますか？
+          {t('chat.deleteConfirmMessage')}
           <br />
-          削除すると相手の画面でも「削除されました」と表示されます。
+          {t('chat.deleteDescription')}
         </p>
 
         <div className={styles.actions}>
@@ -31,14 +34,14 @@ export const DeleteConfirmDialog: React.FC<DeleteConfirmDialogProps> = ({
             onClick={onCancel}
             disabled={isDeleting}
           >
-            キャンセル
+            {t('common.cancel')}
           </button>
           <button
             className={styles.deleteButton}
             onClick={onConfirm}
             disabled={isDeleting}
           >
-            {isDeleting ? '削除中...' : '削除'}
+            {isDeleting ? t('chat.deleting') : t('common.delete')}
           </button>
         </div>
       </div>

@@ -2,6 +2,7 @@
  * MessageBubble - メッセージバブルコンポーネント
  */
 import React, { useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { Message } from '../../types/message';
 import type { UserProfile } from '../../types/user';
 import { formatMessageTime } from '../../utils/date';
@@ -15,11 +16,16 @@ interface MessageBubbleProps {
 }
 
 // Firestore Timestamp型のガード
-const toDate = (dateValue: Date | { toDate: () => Date }): Date => {
-  if (dateValue && typeof (dateValue as { toDate?: () => Date }).toDate === 'function') {
-    return (dateValue as { toDate: () => Date }).toDate();
+const toDate = (dateValue: Date | unknown): Date => {
+  if (dateValue instanceof Date) {
+    return dateValue;
   }
-  return dateValue instanceof Date ? dateValue : new Date(dateValue);
+  // Firestore Timestamp の場合
+  const timestamp = dateValue as { toDate?: () => Date };
+  if (timestamp && typeof timestamp.toDate === 'function') {
+    return timestamp.toDate();
+  }
+  return new Date();
 };
 
 export const MessageBubble: React.FC<MessageBubbleProps> = ({
@@ -28,6 +34,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   partnerProfile,
   onContextMenu,
 }) => {
+  const { t } = useTranslation();
   const [imageLoaded, setImageLoaded] = useState(false);
   const [showFullImage, setShowFullImage] = useState(false);
 
@@ -70,7 +77,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
       <div className={`${styles.container} ${isOwn ? styles.own : styles.other}`}>
         <div className={`${styles.bubble} ${styles.deleted}`}>
           <span className={styles.deletedText}>
-            メッセージが削除されました
+            {t('chat.messageDeleted')}
           </span>
         </div>
       </div>
@@ -88,7 +95,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
       <span className={styles.time}>
         {messageTime}
         {isOwn && message.isRead && (
-          <span className={styles.readStatus}>既読</span>
+          <span className={styles.readStatus}>{t('chat.read')}</span>
         )}
       </span>
     </div>
@@ -106,14 +113,14 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
         {!imageLoaded && <div className={styles.imagePlaceholder} />}
         <img
           src={message.content}
-          alt="送信画像"
+          alt={t('chat.sentImage')}
           className={`${styles.image} ${imageLoaded ? styles.loaded : ''}`}
           onLoad={() => setImageLoaded(true)}
         />
         <span className={styles.mediaTime}>
           {messageTime}
           {isOwn && message.isRead && (
-            <span className={styles.readStatus}>既読</span>
+            <span className={styles.readStatus}>{t('chat.read')}</span>
           )}
         </span>
       </div>
@@ -122,7 +129,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
         <div className={styles.fullImageOverlay} onClick={() => setShowFullImage(false)}>
           <img
             src={message.content}
-            alt="送信画像"
+            alt={t('chat.sentImage')}
             className={styles.fullImage}
           />
         </div>
@@ -146,7 +153,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
       <span className={styles.mediaTime}>
         {messageTime}
         {isOwn && message.isRead && (
-          <span className={styles.readStatus}>既読</span>
+          <span className={styles.readStatus}>{t('chat.read')}</span>
         )}
       </span>
     </div>

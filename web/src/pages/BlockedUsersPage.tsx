@@ -2,12 +2,14 @@
  * BlockedUsersPage - ブロックユーザー一覧ページ
  */
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../stores/authStore';
 import { useFriends } from '../hooks/useFriends';
 import { Loading } from '../components/Loading';
 import styles from './BlockedUsersPage.module.css';
 
 export const BlockedUsersPage: React.FC = () => {
+  const { t } = useTranslation();
   const { user } = useAuthStore();
   const {
     blockedUsers,
@@ -37,13 +39,13 @@ export const BlockedUsersPage: React.FC = () => {
 
       {blockedUsersLoading ? (
         <div className={styles.loadingContainer}>
-          <Loading size="large" />
+          <Loading size="lg" />
         </div>
       ) : blockedUsers.length === 0 ? (
         <div className={styles.emptyContainer}>
           <div className={styles.emptyIcon}>🚫</div>
           <p className={styles.emptyText}>
-            ブロックしているユーザーはいません
+            {t('blocked.empty')}
           </p>
         </div>
       ) : (
@@ -78,7 +80,9 @@ export const BlockedUsersPage: React.FC = () => {
                 onClick={() => handleUnblock(blockedUser.friendId)}
                 disabled={processingId === blockedUser.friendId}
               >
-                {processingId === blockedUser.friendId ? '解除中...' : 'ブロック解除'}
+                {processingId === blockedUser.friendId
+                  ? t('blocked.unblocking')
+                  : t('blocked.unblock')}
               </button>
             </li>
           ))}
@@ -87,8 +91,7 @@ export const BlockedUsersPage: React.FC = () => {
 
       <div className={styles.infoSection}>
         <p className={styles.infoText}>
-          ブロックしたユーザーからはメッセージを受け取れません。
-          ブロックを解除すると、再びメッセージのやり取りができるようになります。
+          {t('blocked.info')}
         </p>
       </div>
     </div>

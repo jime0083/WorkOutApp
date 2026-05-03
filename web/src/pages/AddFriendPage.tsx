@@ -2,7 +2,7 @@
  * AddFriendPage - 友達追加ページ
  */
 import React, { useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../stores/authStore';
 import { useFriends } from '../hooks/useFriends';
 import { searchUserByVisibleUserId } from '../services/friend';
@@ -10,7 +10,7 @@ import type { User } from '../types/user';
 import styles from './AddFriendPage.module.css';
 
 export const AddFriendPage: React.FC = () => {
-  const navigate = useNavigate();
+  const { t } = useTranslation();
   const { user } = useAuthStore();
   const { sendFriendRequest, error: friendError } = useFriends({
     userId: user?.uid || '',
@@ -36,16 +36,16 @@ export const AddFriendPage: React.FC = () => {
 
     if (result) {
       if (result.id === user?.uid) {
-        setSearchError('自分自身を友達に追加することはできません');
+        setSearchError(t('friends.cannotAddSelf'));
       } else {
         setSearchResult(result);
       }
     } else {
-      setSearchError('ユーザーが見つかりません');
+      setSearchError(t('friends.userNotFound'));
     }
 
     setIsSearching(false);
-  }, [searchId, user?.uid]);
+  }, [searchId, user?.uid, t]);
 
   // 友達申請を送信
   const handleSendRequest = useCallback(async () => {
@@ -75,7 +75,7 @@ export const AddFriendPage: React.FC = () => {
     <div className={styles.container}>
       <div className={styles.searchSection}>
         <p className={styles.description}>
-          友だちのIDを入力して検索してください
+          {t('friends.searchHint')}
         </p>
 
         <div className={styles.searchInputWrapper}>
@@ -85,7 +85,7 @@ export const AddFriendPage: React.FC = () => {
             value={searchId}
             onChange={(e) => setSearchId(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="ユーザーID"
+            placeholder={t('placeholder.userId')}
             className={styles.searchInput}
             autoFocus
           />
@@ -96,7 +96,7 @@ export const AddFriendPage: React.FC = () => {
           onClick={handleSearch}
           disabled={!searchId.trim() || isSearching}
         >
-          {isSearching ? '検索中...' : '検索'}
+          {isSearching ? t('common.searching') : t('common.search')}
         </button>
       </div>
 
@@ -130,7 +130,7 @@ export const AddFriendPage: React.FC = () => {
             onClick={handleSendRequest}
             disabled={isSending}
           >
-            {isSending ? '送信中...' : '友達申請を���る'}
+            {isSending ? t('common.sending') : t('friends.sendRequest')}
           </button>
         </div>
       )}
@@ -145,17 +145,17 @@ export const AddFriendPage: React.FC = () => {
       {/* 成功メッセージ */}
       {sendSuccess && (
         <div className={styles.successMessage}>
-          友達申請を送信しました
+          {t('friends.requestSent')}
         </div>
       )}
 
       {/* 自分のID表示 */}
       {user && (
         <div className={styles.myIdSection}>
-          <p className={styles.myIdLabel}>あなたのID</p>
+          <p className={styles.myIdLabel}>{t('friends.yourId')}</p>
           <p className={styles.myId}>@{user.email?.split('@')[0] || 'unknown'}</p>
           <p className={styles.myIdHint}>
-            友だちにこのIDを教えて���追加してもらいましょう
+            {t('friends.shareIdHint')}
           </p>
         </div>
       )}

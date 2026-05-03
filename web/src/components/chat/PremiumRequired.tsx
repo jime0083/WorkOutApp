@@ -2,6 +2,7 @@
  * PremiumRequired - プレミアム機能制限コンポーネント
  */
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import styles from './PremiumRequired.module.css';
 
@@ -14,6 +15,7 @@ export const PremiumRequired: React.FC<PremiumRequiredProps> = ({
   feature,
   onClose,
 }) => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   const handleUpgrade = () => {
@@ -24,34 +26,34 @@ export const PremiumRequired: React.FC<PremiumRequiredProps> = ({
     <div className={styles.overlay}>
       <div className={styles.container}>
         <div className={styles.icon}>👑</div>
-        <h3 className={styles.title}>プレミアム機能</h3>
+        <h3 className={styles.title}>{t('chat.premiumTitle')}</h3>
         <p className={styles.description}>
-          {feature}はプレミアム会員限定の機能です。
+          {t('chat.premiumDescription', { feature })}
           <br />
-          アップグレードして、すべての機能をお楽しみください。
+          {t('chat.premiumUpgradeHint')}
         </p>
 
         <div className={styles.features}>
           <div className={styles.featureItem}>
             <span className={styles.checkIcon}>✓</span>
-            <span>画像・動画の送信</span>
+            <span>{t('chat.imageVideoFeature')}</span>
           </div>
           <div className={styles.featureItem}>
             <span className={styles.checkIcon}>✓</span>
-            <span>メッセージ無制限</span>
+            <span>{t('chat.unlimitedMessages')}</span>
           </div>
           <div className={styles.featureItem}>
             <span className={styles.checkIcon}>✓</span>
-            <span>メッセージ削除機能</span>
+            <span>{t('chat.deleteFeature')}</span>
           </div>
         </div>
 
         <div className={styles.actions}>
           <button className={styles.closeButton} onClick={onClose}>
-            閉じる
+            {t('common.close')}
           </button>
           <button className={styles.upgradeButton} onClick={handleUpgrade}>
-            アップグレード
+            {t('chat.upgrade')}
           </button>
         </div>
       </div>

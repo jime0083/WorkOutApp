@@ -2,18 +2,18 @@
  * ProfileEditPage - プロフィール編集ページ
  */
 import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../stores/authStore';
 import {
   updateUserProfile,
   uploadProfileImage,
   deleteProfileImage,
 } from '../services/user';
-import { Loading } from '../components/Loading';
+import { Loading, LanguageSwitcher } from '../components';
 import styles from './ProfileEditPage.module.css';
 
 export const ProfileEditPage: React.FC = () => {
-  const navigate = useNavigate();
+  const { t } = useTranslation();
   const { userDocument, refreshUserDocument } = useAuthStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -63,9 +63,9 @@ export const ProfileEditPage: React.FC = () => {
       setPreviewUrl(null);
       setSelectedFile(null);
       await refreshUserDocument();
-      setSuccessMessage('プロフィール画像を削除しました');
+      setSuccessMessage(t('profile.imageDeleted'));
     } else {
-      setError(result.error || 'プロフィール画像の削除に失敗しました');
+      setError(result.error || t('profile.imageDeleteFailed'));
     }
 
     setIsUploadingImage(false);
@@ -77,7 +77,7 @@ export const ProfileEditPage: React.FC = () => {
 
     if (!userDocument?.id) return;
     if (!nickname.trim()) {
-      setError('ニックネームを入力してください');
+      setError(t('validation.nicknameRequired'));
       return;
     }
 
@@ -96,7 +96,7 @@ export const ProfileEditPage: React.FC = () => {
         setIsUploadingImage(false);
 
         if (!uploadResult.success) {
-          setError(uploadResult.error || '画像のアップロードに失敗しました');
+          setError(uploadResult.error || t('profile.imageUploadFailed'));
           setIsSubmitting(false);
           return;
         }
@@ -111,12 +111,12 @@ export const ProfileEditPage: React.FC = () => {
 
       if (updateResult.success) {
         await refreshUserDocument();
-        setSuccessMessage('プロフィールを更新しました');
+        setSuccessMessage(t('profile.updateSuccess'));
       } else {
-        setError(updateResult.error || 'プロフィールの更新に失敗しました');
+        setError(updateResult.error || t('profile.updateFailed'));
       }
     } catch (err) {
-      setError('プロフィールの更新に失敗しました');
+      setError(t('profile.updateFailed'));
     }
 
     setIsSubmitting(false);
@@ -125,7 +125,7 @@ export const ProfileEditPage: React.FC = () => {
   if (!userDocument) {
     return (
       <div className={styles.loadingContainer}>
-        <Loading size="large" />
+        <Loading size="lg" />
       </div>
     );
   }
@@ -149,12 +149,12 @@ export const ProfileEditPage: React.FC = () => {
           >
             {isUploadingImage ? (
               <div className={styles.avatarLoading}>
-                <Loading size="small" />
+                <Loading size="sm" />
               </div>
             ) : previewUrl ? (
               <img
                 src={previewUrl}
-                alt="プロフィール画像"
+                alt={t('profile.profileImage')}
                 className={styles.avatarImage}
               />
             ) : (
@@ -180,7 +180,7 @@ export const ProfileEditPage: React.FC = () => {
               onClick={() => fileInputRef.current?.click()}
               disabled={isUploadingImage}
             >
-              画像を変更
+              {t('profile.changeImage')}
             </button>
             {userDocument.profileImageUrl && (
               <button
@@ -189,7 +189,7 @@ export const ProfileEditPage: React.FC = () => {
                 onClick={handleDeleteImage}
                 disabled={isUploadingImage}
               >
-                削除
+                {t('common.delete')}
               </button>
             )}
           </div>
@@ -197,19 +197,19 @@ export const ProfileEditPage: React.FC = () => {
 
         {/* ユーザーID（変更不可） */}
         <div className={styles.field}>
-          <label className={styles.label}>ユーザーID</label>
+          <label className={styles.label}>{t('profile.userId')}</label>
           <div className={styles.staticValue}>
             @{userDocument.visibleUserId}
           </div>
           <p className={styles.hint}>
-            ユーザーIDは変更できません
+            {t('profile.userIdCannotChange')}
           </p>
         </div>
 
         {/* ニックネーム */}
         <div className={styles.field}>
           <label className={styles.label} htmlFor="nickname">
-            ニックネーム
+            {t('auth.nickname')}
           </label>
           <input
             id="nickname"
@@ -217,12 +217,17 @@ export const ProfileEditPage: React.FC = () => {
             value={nickname}
             onChange={(e) => setNickname(e.target.value)}
             className={styles.input}
-            placeholder="ニックネームを入力"
+            placeholder={t('placeholder.nickname')}
             maxLength={30}
           />
           <p className={styles.hint}>
-            30文字以内
+            {t('profile.maxLength', { length: 30 })}
           </p>
+        </div>
+
+        {/* 言語設定 */}
+        <div className={styles.field}>
+          <LanguageSwitcher />
         </div>
 
         {/* 保存ボタン */}
@@ -231,7 +236,7 @@ export const ProfileEditPage: React.FC = () => {
           className={styles.submitButton}
           disabled={isSubmitting || isUploadingImage}
         >
-          {isSubmitting ? '保存中...' : '保存'}
+          {isSubmitting ? t('common.saving') : t('common.save')}
         </button>
       </form>
     </div>

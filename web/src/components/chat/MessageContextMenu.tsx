@@ -2,6 +2,7 @@
  * MessageContextMenu - メッセージコンテキストメニュー
  */
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import styles from './MessageContextMenu.module.css';
 
 interface MessageContextMenuProps {
@@ -21,6 +22,8 @@ export const MessageContextMenu: React.FC<MessageContextMenuProps> = ({
   onClose,
   position,
 }) => {
+  const { t } = useTranslation();
+
   // 画面端からはみ出さないように位置を調整
   const adjustedPosition = {
     x: Math.min(position.x, window.innerWidth - 160),
@@ -39,20 +42,20 @@ export const MessageContextMenu: React.FC<MessageContextMenuProps> = ({
       >
         <button className={styles.menuItem} onClick={onCopy}>
           <span className={styles.icon}>📋</span>
-          <span>コピー</span>
+          <span>{t('chat.copy')}</span>
         </button>
 
         {isOwn && isPremium && (
           <button className={`${styles.menuItem} ${styles.danger}`} onClick={onDelete}>
             <span className={styles.icon}>🗑️</span>
-            <span>削除</span>
+            <span>{t('common.delete')}</span>
           </button>
         )}
 
         {isOwn && !isPremium && (
           <button className={`${styles.menuItem} ${styles.disabled}`} disabled>
             <span className={styles.icon}>🗑️</span>
-            <span>削除（プレミアム限定）</span>
+            <span>{t('chat.deletePremium')}</span>
           </button>
         )}
       </div>

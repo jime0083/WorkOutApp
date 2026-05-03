@@ -134,10 +134,10 @@ export const useUIStore = create<UIState & UIActions>((set) => ({
   clearToasts: () => set({ toasts: [] }),
 
   // ローディングアクション
-  setGlobalLoading: (loading, message = null) =>
+  setGlobalLoading: (loading, message) =>
     set({
       isGlobalLoading: loading,
-      loadingMessage: message,
+      loadingMessage: message ?? null,
     }),
 
   // サイドバーアクション

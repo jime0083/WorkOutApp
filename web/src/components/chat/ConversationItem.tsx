@@ -2,6 +2,7 @@
  * ConversationItem - 会話リストアイテム
  */
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import type { ConversationWithProfile } from '../../types/conversation';
 import { formatRelativeTime } from '../../utils/date';
 import styles from './ConversationItem.module.css';
@@ -17,20 +18,21 @@ export const ConversationItem: React.FC<ConversationItemProps> = ({
   currentUserId,
   onClick,
 }) => {
+  const { t } = useTranslation();
   const unreadCount = conversation.unreadCount[currentUserId] || 0;
   const lastMessage = conversation.lastMessage;
 
   // 最後のメッセージのプレビューを生成
   const getMessagePreview = (): string => {
-    if (!lastMessage) return 'メッセージがありません';
+    if (!lastMessage) return t('chat.noMessages');
 
     switch (lastMessage.type) {
       case 'text':
         return lastMessage.content;
       case 'image':
-        return '📷 画像';
+        return t('chat.imageMessage');
       case 'video':
-        return '🎥 動画';
+        return t('chat.videoMessage');
       default:
         return lastMessage.content || '';
     }
@@ -41,10 +43,15 @@ export const ConversationItem: React.FC<ConversationItemProps> = ({
     if (!lastMessage) return new Date();
     // Firestore Timestamp か Date かをチェック
     const createdAt = lastMessage.createdAt;
-    if (createdAt && typeof (createdAt as { toDate?: () => Date }).toDate === 'function') {
-      return (createdAt as { toDate: () => Date }).toDate();
+    if (createdAt instanceof Date) {
+      return createdAt;
     }
-    return createdAt instanceof Date ? createdAt : new Date(createdAt);
+    // Firestore Timestamp の場合
+    const timestamp = createdAt as unknown as { toDate?: () => Date };
+    if (timestamp && typeof timestamp.toDate === 'function') {
+      return timestamp.toDate();
+    }
+    return new Date();
   };
 
   return (
@@ -66,7 +73,7 @@ export const ConversationItem: React.FC<ConversationItemProps> = ({
       <div className={styles.content}>
         <div className={styles.header}>
           <span className={styles.name}>
-            {conversation.partnerProfile?.nickname || '不明なユーザー'}
+            {conversation.partnerProfile?.nickname || t('chat.unknownUser')}
           </span>
           {lastMessage && (
             <span className={styles.time}>

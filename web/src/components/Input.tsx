@@ -3,6 +3,7 @@
  */
 
 import React, { useState, forwardRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import styles from './Input.module.css';
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
@@ -30,6 +31,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
     },
     ref
   ) => {
+    const { t } = useTranslation();
     const [showPassword, setShowPassword] = useState(false);
     const isPassword = type === 'password';
     const inputType = isPassword ? (showPassword ? 'text' : 'password') : type;
@@ -72,7 +74,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
               onClick={() => setShowPassword(!showPassword)}
               tabIndex={-1}
             >
-              {showPassword ? '隠す' : '表示'}
+              {showPassword ? t('input.hide') : t('input.show')}
             </button>
           )}
 

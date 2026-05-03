@@ -100,7 +100,7 @@ export const ChatRoomPage: React.FC = () => {
   if (isLoading) {
     return (
       <div className={styles.loadingContainer}>
-        <Loading size="large" />
+        <Loading size="lg" />
       </div>
     );
   }

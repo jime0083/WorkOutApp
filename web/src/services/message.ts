@@ -12,17 +12,15 @@ import {
   limit,
   onSnapshot,
   serverTimestamp,
-  Timestamp,
   getDocs,
   getDoc,
   startAfter,
-  QueryDocumentSnapshot,
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { httpsCallable } from 'firebase/functions';
 import { db, storage, functions } from './firebase';
-import type { Message, CreateMessageInput, SendMessageResult } from '../types/message';
-import type { Conversation, ConversationWithProfile } from '../types/conversation';
+import type { Message, SendMessageResult } from '../types/message';
+import type { ConversationWithProfile } from '../types/conversation';
 import type { User } from '../types/user';
 
 // ページサイズ

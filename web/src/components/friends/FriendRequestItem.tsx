@@ -2,6 +2,7 @@
  * FriendRequestItem - 友達申請アイテムコンポーネント
  */
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { FriendRequest } from '../../types/friendship';
 import { formatRelativeTime } from '../../utils/date';
 import styles from './FriendRequestItem.module.css';
@@ -19,6 +20,7 @@ export const FriendRequestItem: React.FC<FriendRequestItemProps> = ({
   onAccept,
   onReject,
 }) => {
+  const { t } = useTranslation();
   const [isProcessing, setIsProcessing] = useState(false);
 
   const handleAccept = async () => {
@@ -70,21 +72,21 @@ export const FriendRequestItem: React.FC<FriendRequestItemProps> = ({
             onClick={handleAccept}
             disabled={isProcessing}
           >
-            承認
+            {t('friendRequest.accept')}
           </button>
           <button
             className={styles.rejectButton}
             onClick={handleReject}
             disabled={isProcessing}
           >
-            拒否
+            {t('friendRequest.reject')}
           </button>
         </div>
       )}
 
       {type === 'sent' && (
         <div className={styles.status}>
-          <span className={styles.pendingLabel}>承認待ち</span>
+          <span className={styles.pendingLabel}>{t('friendRequest.pending')}</span>
         </div>
       )}
     </li>

@@ -2,6 +2,7 @@
  * MessageInput - メッセージ入力コンポーネント
  */
 import React, { useState, useRef, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MediaPreview } from './MediaPreview';
 import { PremiumRequired } from './PremiumRequired';
 import styles from './MessageInput.module.css';
@@ -23,6 +24,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
   isPremium,
   remainingMessages,
 }) => {
+  const { t } = useTranslation();
   const [text, setText] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -62,7 +64,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
       const maxSize = file.type.startsWith('video/') ? 100 * 1024 * 1024 : 10 * 1024 * 1024;
       if (file.size > maxSize) {
         const maxSizeLabel = file.type.startsWith('video/') ? '100MB' : '10MB';
-        alert(`ファイルサイズが大きすぎます。${maxSizeLabel}以下のファイルを選択してください。`);
+        alert(t('chat.fileTooLarge', { maxSize: maxSizeLabel }));
         if (fileInputRef.current) {
           fileInputRef.current.value = '';
         }
@@ -114,13 +116,13 @@ export const MessageInput: React.FC<MessageInputProps> = ({
       <div className={styles.container}>
         {!canSend && (
           <div className={styles.limitWarning}>
-            今月のメッセージ上限に達しました。プレミアム会員にアップグレードして無制限で送信できます。
+            {t('chat.messageLimit')}
           </div>
         )}
 
         {canSend && !isPremium && remainingMessages <= 3 && (
           <div className={styles.limitInfo}>
-            残り {remainingMessages} メッセージ（今月）
+            {t('chat.remainingMessages', { count: remainingMessages })}
           </div>
         )}
 
@@ -130,7 +132,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
             className={styles.mediaButton}
             onClick={handleMediaClick}
             disabled={!canSend || isSending}
-            aria-label="メディアを添付"
+            aria-label={t('message.attachMedia')}
           >
             📷
           </button>
@@ -139,7 +141,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={canSend ? 'メッセージを入力...' : 'メッセージ上限に達しました'}
+            placeholder={canSend ? t('placeholder.message') : t('placeholder.messageLimitReached')}
             className={styles.textInput}
             disabled={!canSend || isSending}
             rows={1}
@@ -150,7 +152,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
             className={styles.sendButton}
             onClick={handleSendText}
             disabled={!text.trim() || !canSend || isSending}
-            aria-label="送信"
+            aria-label={t('common.send')}
           >
             ➤
           </button>
@@ -178,7 +180,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
       {/* プレミアム機能案内 */}
       {showPremiumModal && (
         <PremiumRequired
-          feature="画像・動画の送信"
+          feature={t('chat.imageVideoFeature')}
           onClose={() => setShowPremiumModal(false)}
         />
       )}

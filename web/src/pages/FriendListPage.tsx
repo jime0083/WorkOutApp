@@ -3,6 +3,7 @@
  */
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../stores/authStore';
 import { useFriends } from '../hooks/useFriends';
 import { FriendItem } from '../components/friends/FriendItem';
@@ -10,6 +11,7 @@ import { Loading } from '../components/Loading';
 import styles from './FriendListPage.module.css';
 
 export const FriendListPage: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const {
@@ -23,7 +25,7 @@ export const FriendListPage: React.FC = () => {
   if (friendsLoading) {
     return (
       <div className={styles.loadingContainer}>
-        <Loading size="large" />
+        <Loading size="lg" />
       </div>
     );
   }
@@ -36,13 +38,13 @@ export const FriendListPage: React.FC = () => {
           className={styles.addButton}
           onClick={() => navigate('/friends/add')}
         >
-          友だちを追加
+          {t('friends.addFriend')}
         </button>
         <button
           className={styles.requestsButton}
           onClick={() => navigate('/friends/requests')}
         >
-          友達申請
+          {t('friends.friendRequests')}
           {pendingRequestCount > 0 && (
             <span className={styles.badge}>{pendingRequestCount}</span>
           )}
@@ -53,15 +55,15 @@ export const FriendListPage: React.FC = () => {
       {friends.length === 0 ? (
         <div className={styles.emptyContainer}>
           <div className={styles.emptyIcon}>👥</div>
-          <h2 className={styles.emptyTitle}>友だちがいません</h2>
+          <h2 className={styles.emptyTitle}>{t('friends.empty')}</h2>
           <p className={styles.emptyText}>
-            IDを検索して友だちを追加しましょう
+            {t('friends.emptyHint')}
           </p>
           <button
             className={styles.addFriendButton}
             onClick={() => navigate('/friends/add')}
           >
-            友だちを追加
+            {t('friends.addFriend')}
           </button>
         </div>
       ) : (

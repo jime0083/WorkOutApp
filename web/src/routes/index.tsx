@@ -38,21 +38,8 @@ const FriendRequestPage = lazy(() =>
     default: m.FriendRequestPage,
   }))
 );
-const ProfilePage = lazy(() =>
-  import('../pages/ProfilePage').then((m) => ({ default: m.ProfilePage }))
-);
-const SubscriptionPage = lazy(() =>
-  import('../pages/SubscriptionPage').then((m) => ({
-    default: m.SubscriptionPage,
-  }))
-);
-const SettingsPage = lazy(() =>
-  import('../pages/SettingsPage').then((m) => ({ default: m.SettingsPage }))
-);
-const AuthCallbackPage = lazy(() =>
-  import('../pages/auth/AuthCallbackPage').then((m) => ({
-    default: m.AuthCallbackPage,
-  }))
+const ProfileEditPage = lazy(() =>
+  import('../pages/ProfileEditPage').then((m) => ({ default: m.ProfileEditPage }))
 );
 
 // Suspenseラッパー
@@ -82,16 +69,6 @@ const UnauthenticatedLayout: React.FC = () => (
 
 // ルーター定義
 const router = createBrowserRouter([
-  // 認証コールバック（トークン受け取り用）
-  {
-    path: '/auth/callback',
-    element: (
-      <SuspenseWrapper>
-        <AuthCallbackPage />
-      </SuspenseWrapper>
-    ),
-  },
-
   // 認証ページ（未ログイン用）
   {
     element: <UnauthenticatedLayout />,
@@ -133,16 +110,18 @@ const router = createBrowserRouter([
       },
       {
         path: '/profile',
-        element: <ProfilePage />,
+        element: <ProfileEditPage />,
       },
-      {
-        path: '/subscription',
-        element: <SubscriptionPage />,
-      },
-      {
-        path: '/settings',
-        element: <SettingsPage />,
-      },
+      // TODO: Phase 9で実装
+      // {
+      //   path: '/subscription',
+      //   element: <SubscriptionPage />,
+      // },
+      // TODO: Phase 11で実装
+      // {
+      //   path: '/settings',
+      //   element: <SettingsPage />,
+      // },
     ],
   },
 

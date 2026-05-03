@@ -3,6 +3,7 @@
  */
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../stores/authStore';
 import { useConversations } from '../hooks/useConversations';
 import { ConversationItem } from '../components/chat/ConversationItem';
@@ -10,6 +11,7 @@ import { Loading } from '../components/Loading';
 import styles from './ConversationListPage.module.css';
 
 export const ConversationListPage: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const { conversations, isLoading } = useConversations({
@@ -23,7 +25,7 @@ export const ConversationListPage: React.FC = () => {
   if (isLoading) {
     return (
       <div className={styles.loadingContainer}>
-        <Loading size="large" />
+        <Loading size="lg" />
       </div>
     );
   }
@@ -32,15 +34,15 @@ export const ConversationListPage: React.FC = () => {
     return (
       <div className={styles.emptyContainer}>
         <div className={styles.emptyIcon}>💬</div>
-        <h2 className={styles.emptyTitle}>トークがありません</h2>
+        <h2 className={styles.emptyTitle}>{t('conversation.empty')}</h2>
         <p className={styles.emptyText}>
-          友だちを追加して、トークを始めましょう
+          {t('conversation.emptyHint')}
         </p>
         <button
           className={styles.addFriendButton}
           onClick={() => navigate('/friends/add')}
         >
-          友だちを追加
+          {t('conversation.addFriend')}
         </button>
       </div>
     );

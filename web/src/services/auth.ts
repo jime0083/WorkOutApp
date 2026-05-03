@@ -8,9 +8,8 @@ import {
   onAuthStateChanged as firebaseOnAuthStateChanged,
   sendPasswordResetEmail as firebaseSendPasswordResetEmail,
   sendEmailVerification as firebaseSendEmailVerification,
-  User as FirebaseUser,
-  UserCredential,
 } from 'firebase/auth';
+import type { User as FirebaseUser, UserCredential } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from './firebase';
 import type { User, CreateUserInput } from '../types/user';

@@ -68,6 +68,7 @@ const navItems: NavItem[] = [
 ];
 
 export const BottomNav: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -82,18 +83,19 @@ export const BottomNav: React.FC = () => {
     <nav className={styles.nav}>
       {navItems.map((item) => {
         const active = isActive(item.path);
+        const label = t(item.labelKey);
         return (
           <button
             key={item.path}
             className={`${styles.navItem} ${active ? styles.active : ''}`}
             onClick={() => navigate(item.path)}
-            aria-label={item.label}
+            aria-label={label}
             aria-current={active ? 'page' : undefined}
           >
             <span className={styles.icon}>
               {active && item.activeIcon ? item.activeIcon : item.icon}
             </span>
-            <span className={styles.label}>{item.label}</span>
+            <span className={styles.label}>{label}</span>
           </button>
         );
       })}
