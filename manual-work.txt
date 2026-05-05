@@ -45,28 +45,6 @@ Manual Work 1 → Manual Work 2 → Phase 1〜3
 
 ---
 
-## Work 5: GitHub Pages 設定
-必要なタイミング: **Phase 13 開始前**
-
-### 5.1 GitHub リポジトリ設定
-- [ ] GitHub にリポジトリ作成（未作成の場合）
-- [ ] リポジトリを Public に設定（GitHub Pages無料利用のため）
-  - または GitHub Pro で Private リポジトリでも可
-
-### 5.2 GitHub Pages 有効化
-- [ ] リポジトリ Settings → Pages
-- [ ] Source: GitHub Actions を選択
-
-### 5.3 GitHub Actions ワークフロー作成
-- [ ] .github/workflows/deploy.yml 作成（AI作業で実施）
-
-### 5.4 カスタムドメイン（任意）
-- [ ] カスタムドメイン設定（必要な場合）
-- [ ] DNS 設定
-- [ ] HTTPS 有効化確認
-
----
-
 ## Work 6: TestFlight 配布準備
 必要なタイミング: **Phase 14 開始前**
 

@@ -4,12 +4,15 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { requireAuth, requireString } from '../utils/validators';
+import { getMessage } from '../i18n/messages';
+import { sendFriendAcceptedNotification } from '../messaging/sendPushNotification';
 
 const db = getFirestore();
 
 interface RespondToFriendRequestData {
   friendshipId: string;
   action: 'accept' | 'reject';
+  lang?: string;
 }
 
 interface RespondToFriendRequestResult {
@@ -23,13 +26,16 @@ export const respondToFriendRequest = onCall<RespondToFriendRequestData>(
     // 認証チェック
     const userId = requireAuth(request.auth);
 
+    // 言語設定を取得
+    const lang = request.data.lang;
+
     // 入力検証
     requireString(request.data.friendshipId, 'friendshipId');
     const friendshipId = request.data.friendshipId;
     const action = request.data.action;
 
     if (action !== 'accept' && action !== 'reject') {
-      throw new HttpsError('invalid-argument', 'actionは"accept"または"reject"である必要があります');
+      throw new HttpsError('invalid-argument', getMessage(lang, 'friends', 'invalidAction'));
     }
 
     try {
@@ -39,7 +45,7 @@ export const respondToFriendRequest = onCall<RespondToFriendRequestData>(
       if (!friendshipDoc.exists) {
         return {
           success: false,
-          error: '友達申請が見つかりません',
+          error: getMessage(lang, 'friends', 'requestNotFound'),
         };
       }
 
@@ -49,7 +55,7 @@ export const respondToFriendRequest = onCall<RespondToFriendRequestData>(
       if (friendshipData.receiverId !== userId) {
         return {
           success: false,
-          error: 'この友達申請に応答する権限がありません',
+          error: getMessage(lang, 'friends', 'notAuthorized'),
         };
       }
 
@@ -57,7 +63,7 @@ export const respondToFriendRequest = onCall<RespondToFriendRequestData>(
       if (friendshipData.status !== 'pending') {
         return {
           success: false,
-          error: 'この友達申請は既に処理されています',
+          error: getMessage(lang, 'friends', 'alreadyProcessed'),
         };
       }
 
@@ -67,6 +73,13 @@ export const respondToFriendRequest = onCall<RespondToFriendRequestData>(
           status: 'accepted',
           updatedAt: FieldValue.serverTimestamp(),
         });
+
+        // 申請者に承認通知を送信
+        await sendFriendAcceptedNotification(
+          friendshipData.requesterId,
+          userId,
+          friendshipId
+        );
       } else {
         // 友達申請を拒否（ドキュメントを削除）
         await friendshipRef.delete();
@@ -77,7 +90,7 @@ export const respondToFriendRequest = onCall<RespondToFriendRequestData>(
       };
     } catch (error) {
       console.error('Failed to respond to friend request:', error);
-      throw new HttpsError('internal', '友達申請の応答に失敗しました');
+      throw new HttpsError('internal', getMessage(lang, 'friends', 'respondFailed'));
     }
   }
 );

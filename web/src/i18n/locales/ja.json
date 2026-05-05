@@ -126,6 +126,29 @@
     "yearlyPrice": "¥5,000/年",
     "yearlySaving": "年間契約で約17%お得"
   },
+  "subscription": {
+    "title": "プレミアムプラン",
+    "currentPlan": "現在のプラン",
+    "freePlan": "無料プラン",
+    "premiumPlan": "プレミアムプラン",
+    "selectPlan": "プランを選択",
+    "monthly": "月額",
+    "yearly": "年額",
+    "monthlyPrice": "¥500/月",
+    "yearlyPrice": "¥5,000/年",
+    "yearlyDiscount": "2ヶ月分お得",
+    "features": "プレミアム機能",
+    "unlimitedMessages": "メッセージ無制限",
+    "imageVideo": "画像・動画の送受信",
+    "messageDelete": "メッセージ削除機能",
+    "panicButton": "緊急削除ボタン",
+    "expiryDate": "有効期限: {{date}}",
+    "autoRenew": "自動更新",
+    "manageSubscription": "サブスクリプション管理",
+    "manageNote": "サブスクリプションはiOSアプリから購入・管理できます",
+    "iosOnly": "※ iOS アプリ限定機能",
+    "openAppStore": "App Storeで管理"
+  },
   "settings": {
     "title": "設定",
     "language": "言語",
@@ -196,5 +219,30 @@
   "input": {
     "show": "表示",
     "hide": "隠す"
+  },
+  "accountDelete": {
+    "panicTitle": "緊急全データ削除",
+    "panicDescription": "すべてのデータを即座に完全削除します。この操作は取り消せません。",
+    "premiumOnly": "プレミアム限定",
+    "premiumRequired": "プレミアム会員限定機能",
+    "warningTitle": "削除される内容",
+    "warningItem1": "すべてのメッセージ履歴",
+    "warningItem2": "すべての友達関係",
+    "warningItem3": "すべてのメディアファイル",
+    "warningItem4": "アカウント情報",
+    "panicButton": "緊急削除を実行",
+    "panicConfirmTitle": "最終確認",
+    "panicConfirmMessage": "この操作は取り消せません。すべてのデータが完全に削除されます。",
+    "enterCode": "「{{code}}」と入力してください",
+    "invalidCode": "確認コードが正しくありません",
+    "panicSuccess": "すべてのデータを削除しました",
+    "panicFailed": "削除に失敗しました",
+    "normalTitle": "アカウント削除",
+    "normalDescription": "アカウントを削除します。送信したメッセージは「削除済み」として表示されます。",
+    "normalButton": "アカウントを削除",
+    "normalConfirmTitle": "アカウント削除の確認",
+    "normalConfirmMessage": "本当にアカウントを削除しますか？この操作は取り消せません。",
+    "normalSuccess": "アカウントを削除しました",
+    "normalFailed": "アカウントの削除に失敗しました"
   }
 }

@@ -11,6 +11,7 @@ import {
   SafeAreaView,
   TouchableOpacity,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { colors, typography, spacing } from '../../theme';
 import {
   StepCounter,
@@ -23,12 +24,16 @@ import {
   heartRateData,
   sleepData,
 } from '../../data/dummyData';
+import '../../i18n';
 
 interface DummyHomeScreenProps {
   navigation?: unknown;
 }
 
 export const DummyHomeScreen: React.FC<DummyHomeScreenProps> = () => {
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language === 'ja' ? 'ja-JP' : 'en-US';
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView
@@ -38,9 +43,9 @@ export const DummyHomeScreen: React.FC<DummyHomeScreenProps> = () => {
       >
         {/* ヘッダー */}
         <View style={styles.header}>
-          <Text style={styles.greeting}>おはようございます</Text>
+          <Text style={styles.greeting}>{t('dummy.goodMorning')}</Text>
           <Text style={styles.date}>
-            {new Date().toLocaleDateString('ja-JP', {
+            {new Date().toLocaleDateString(locale, {
               month: 'long',
               day: 'numeric',
               weekday: 'long',
@@ -50,7 +55,7 @@ export const DummyHomeScreen: React.FC<DummyHomeScreenProps> = () => {
 
         {/* アクティビティリング */}
         <TouchableOpacity style={styles.section} activeOpacity={0.9}>
-          <Text style={styles.sectionTitle}>アクティビティ</Text>
+          <Text style={styles.sectionTitle}>{t('dummy.activity')}</Text>
           <ActivityRing rings={activityRings} size={180} />
         </TouchableOpacity>
 
@@ -60,62 +65,62 @@ export const DummyHomeScreen: React.FC<DummyHomeScreenProps> = () => {
         </View>
 
         {/* 健康データグリッド */}
-        <Text style={styles.sectionTitle}>健康データ</Text>
+        <Text style={styles.sectionTitle}>{t('dummy.healthData')}</Text>
         <View style={styles.cardGrid}>
           <View style={styles.cardWrapper}>
             <HealthCard
-              title="消費カロリー"
+              title={t('dummy.burnedCalories')}
               value={todayStats.calories}
               unit="kcal"
               color="#FA114F"
-              subtitle={`目標: 600 kcal`}
+              subtitle={t('dummy.goal', { value: 600, unit: 'kcal' })}
             />
           </View>
           <View style={styles.cardWrapper}>
             <HealthCard
-              title="移動距離"
+              title={t('dummy.movementDistance')}
               value={todayStats.distance}
               unit="km"
               color="#5AC8FA"
-              subtitle="ウォーキング換算"
+              subtitle={t('dummy.walkingEquivalent')}
             />
           </View>
           <View style={styles.cardWrapper}>
             <HealthCard
-              title="心拍数"
+              title={t('dummy.heartRate')}
               value={heartRateData.current}
               unit="BPM"
               color="#FF3B30"
-              subtitle={`安静時: ${heartRateData.resting} BPM`}
+              subtitle={t('dummy.restingHeartRate', { value: heartRateData.resting })}
             />
           </View>
           <View style={styles.cardWrapper}>
             <HealthCard
-              title="睡眠"
-              value={`${sleepData.hours}時間${sleepData.minutes}分`}
+              title={t('dummy.sleep')}
+              value={`${sleepData.hours}${t('dummy.sleepUnit')}${sleepData.minutes}${t('dummy.minutes')}`}
               color="#5856D6"
-              subtitle="昨夜の睡眠"
+              subtitle={t('dummy.lastNightSleep')}
             />
           </View>
         </View>
 
         {/* 今日のサマリー */}
         <View style={styles.summarySection}>
-          <Text style={styles.sectionTitle}>今日のサマリー</Text>
+          <Text style={styles.sectionTitle}>{t('dummy.todaySummary')}</Text>
           <View style={styles.summaryCard}>
             <View style={styles.summaryItem}>
-              <Text style={styles.summaryLabel}>アクティブ時間</Text>
-              <Text style={styles.summaryValue}>{todayStats.activeMinutes}分</Text>
+              <Text style={styles.summaryLabel}>{t('dummy.activeTime')}</Text>
+              <Text style={styles.summaryValue}>{todayStats.activeMinutes}{t('dummy.minutes')}</Text>
             </View>
             <View style={styles.summaryDivider} />
             <View style={styles.summaryItem}>
-              <Text style={styles.summaryLabel}>スタンド時間</Text>
-              <Text style={styles.summaryValue}>{todayStats.standHours}時間</Text>
+              <Text style={styles.summaryLabel}>{t('dummy.standTime')}</Text>
+              <Text style={styles.summaryValue}>{todayStats.standHours}{t('dummy.hours')}</Text>
             </View>
             <View style={styles.summaryDivider} />
             <View style={styles.summaryItem}>
-              <Text style={styles.summaryLabel}>エクササイズ</Text>
-              <Text style={styles.summaryValue}>{todayStats.exerciseMinutes}分</Text>
+              <Text style={styles.summaryLabel}>{t('dummy.exercise')}</Text>
+              <Text style={styles.summaryValue}>{todayStats.exerciseMinutes}{t('dummy.minutes')}</Text>
             </View>
           </View>
         </View>

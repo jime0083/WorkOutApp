@@ -10,10 +10,20 @@
     "test": "jest"
   },
   "dependencies": {
+    "@react-native-firebase/app": "^24.0.0",
+    "@react-native-firebase/auth": "^24.0.0",
+    "@react-native-firebase/firestore": "^24.0.0",
+    "@react-native-firebase/functions": "^24.0.0",
+    "@react-native-firebase/messaging": "^24.0.0",
     "@react-native/new-app-screen": "0.85.2",
+    "i18next": "^26.0.8",
     "react": "19.2.3",
+    "react-i18next": "^17.0.6",
     "react-native": "0.85.2",
-    "react-native-safe-area-context": "^5.5.2"
+    "react-native-iap": "^15.2.0",
+    "react-native-localize": "^3.7.0",
+    "react-native-safe-area-context": "^5.5.2",
+    "react-native-screenshot-prevent": "^1.2.2"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

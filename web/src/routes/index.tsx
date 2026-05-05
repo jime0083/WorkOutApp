@@ -41,6 +41,12 @@ const FriendRequestPage = lazy(() =>
 const ProfileEditPage = lazy(() =>
   import('../pages/ProfileEditPage').then((m) => ({ default: m.ProfileEditPage }))
 );
+const SubscriptionPage = lazy(() =>
+  import('../pages/SubscriptionPage').then((m) => ({ default: m.SubscriptionPage }))
+);
+const AccountDeletePage = lazy(() =>
+  import('../pages/AccountDeletePage').then((m) => ({ default: m.AccountDeletePage }))
+);
 
 // Suspenseラッパー
 const SuspenseWrapper: React.FC<{ children: React.ReactNode }> = ({
@@ -112,16 +118,14 @@ const router = createBrowserRouter([
         path: '/profile',
         element: <ProfileEditPage />,
       },
-      // TODO: Phase 9で実装
-      // {
-      //   path: '/subscription',
-      //   element: <SubscriptionPage />,
-      // },
-      // TODO: Phase 11で実装
-      // {
-      //   path: '/settings',
-      //   element: <SettingsPage />,
-      // },
+      {
+        path: '/subscription',
+        element: <SubscriptionPage />,
+      },
+      {
+        path: '/account/delete',
+        element: <AccountDeletePage />,
+      },
     ],
   },
 

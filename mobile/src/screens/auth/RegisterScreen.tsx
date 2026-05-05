@@ -12,9 +12,11 @@ import {
   TouchableOpacity,
   Alert,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { Button, Input, Card } from '../../components';
 import { registerUser } from '../../services/auth';
 import { colors, spacing, typography } from '../../theme';
+import '../../i18n';
 
 interface RegisterScreenProps {
   onNavigateToLogin: () => void;
@@ -25,6 +27,8 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
   onNavigateToLogin,
   onRegisterSuccess,
 }) => {
+  const { t } = useTranslation();
+
   // 本命アカウント情報
   const [realEmail, setRealEmail] = useState('');
   const [realPassword, setRealPassword] = useState('');
@@ -46,39 +50,39 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
 
     // 本命メール
     if (!realEmail.trim()) {
-      newErrors.realEmail = 'メールアドレスを入力してください';
+      newErrors.realEmail = t('validation.emailRequired');
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(realEmail)) {
-      newErrors.realEmail = 'メールアドレスの形式が正しくありません';
+      newErrors.realEmail = t('validation.emailInvalid');
     }
 
     // 本命パスワード
     if (!realPassword) {
-      newErrors.realPassword = 'パスワードを入力してください';
+      newErrors.realPassword = t('validation.passwordRequired');
     } else if (realPassword.length < 8) {
-      newErrors.realPassword = 'パスワードは8文字以上で入力してください';
+      newErrors.realPassword = t('validation.passwordMinLength');
     }
 
     // パスワード確認
     if (realPassword !== realPasswordConfirm) {
-      newErrors.realPasswordConfirm = 'パスワードが一致しません';
+      newErrors.realPasswordConfirm = t('validation.passwordMismatch');
     }
 
     // ダミーメール
     if (!dummyEmail.trim()) {
-      newErrors.dummyEmail = 'ダミーメールアドレスを入力してください';
+      newErrors.dummyEmail = t('validation.dummyEmailRequired');
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(dummyEmail)) {
-      newErrors.dummyEmail = 'メールアドレスの形式が正しくありません';
+      newErrors.dummyEmail = t('validation.emailInvalid');
     } else if (dummyEmail === realEmail) {
-      newErrors.dummyEmail = '本命メールと異なるアドレスを入力してください';
+      newErrors.dummyEmail = t('validation.dummyEmailSameAsReal');
     }
 
     // ダミーパスワード
     if (!dummyPassword) {
-      newErrors.dummyPassword = 'ダミーパスワードを入力してください';
+      newErrors.dummyPassword = t('validation.dummyPasswordRequired');
     } else if (dummyPassword.length < 8) {
-      newErrors.dummyPassword = 'パスワードは8文字以上で入力してください';
+      newErrors.dummyPassword = t('validation.passwordMinLength');
     } else if (dummyPassword === realPassword) {
-      newErrors.dummyPassword = '本命パスワードと異なるパスワードを入力してください';
+      newErrors.dummyPassword = t('validation.dummyPasswordSameAsReal');
     }
 
     setErrors(newErrors);
@@ -103,15 +107,15 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
 
       if (result.success) {
         Alert.alert(
-          '登録完了',
-          'アカウントが作成されました。ログインしてください。',
+          t('common.success'),
+          t('auth.accountCreated'),
           [{ text: 'OK', onPress: onRegisterSuccess }]
         );
       } else {
-        Alert.alert('登録失敗', result.error || '登録に失敗しました');
+        Alert.alert(t('auth.registerFailed'), result.error || t('common.error'));
       }
-    } catch (error) {
-      Alert.alert('エラー', '登録中にエラーが発生しました');
+    } catch {
+      Alert.alert(t('common.error'), t('auth.registerError'));
     } finally {
       setIsLoading(false);
     }
@@ -127,41 +131,41 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.header}>
-          <Text style={styles.title}>新規登録</Text>
-          <Text style={styles.subtitle}>2つのアカウントを設定します</Text>
+          <Text style={styles.title}>{t('auth.registerTitle')}</Text>
+          <Text style={styles.subtitle}>{t('auth.registerSubtitle')}</Text>
         </View>
 
         {/* 本命アカウント */}
         <Card style={styles.section}>
-          <Text style={styles.sectionTitle}>本命アカウント</Text>
+          <Text style={styles.sectionTitle}>{t('auth.realAccount')}</Text>
           <Text style={styles.sectionDescription}>
-            メッセージ機能を利用するためのアカウントです
+            {t('auth.realAccountDesc')}
           </Text>
 
           <Input
-            label="メールアドレス"
+            label={t('auth.email')}
             value={realEmail}
             onChangeText={setRealEmail}
-            placeholder="example@email.com"
+            placeholder={t('placeholder.email')}
             keyboardType="email-address"
             autoCapitalize="none"
             error={errors.realEmail}
           />
 
           <Input
-            label="パスワード"
+            label={t('auth.password')}
             value={realPassword}
             onChangeText={setRealPassword}
-            placeholder="8文字以上"
+            placeholder={t('placeholder.passwordMinLength')}
             secureTextEntry
             error={errors.realPassword}
           />
 
           <Input
-            label="パスワード（確認）"
+            label={t('auth.passwordConfirm')}
             value={realPasswordConfirm}
             onChangeText={setRealPasswordConfirm}
-            placeholder="もう一度入力"
+            placeholder={t('placeholder.passwordConfirm')}
             secureTextEntry
             error={errors.realPasswordConfirm}
           />
@@ -169,26 +173,26 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
 
         {/* ダミーアカウント */}
         <Card style={styles.section}>
-          <Text style={styles.sectionTitle}>ダミーアカウント</Text>
+          <Text style={styles.sectionTitle}>{t('auth.dummyAccount')}</Text>
           <Text style={styles.sectionDescription}>
-            ヘルスケアアプリとして表示するためのアカウントです
+            {t('auth.dummyAccountDesc')}
           </Text>
 
           <Input
-            label="ダミーメールアドレス"
+            label={t('auth.dummyEmail')}
             value={dummyEmail}
             onChangeText={setDummyEmail}
-            placeholder="dummy@email.com"
+            placeholder={t('placeholder.dummyEmail')}
             keyboardType="email-address"
             autoCapitalize="none"
             error={errors.dummyEmail}
           />
 
           <Input
-            label="ダミーパスワード"
+            label={t('auth.dummyPassword')}
             value={dummyPassword}
             onChangeText={setDummyPassword}
-            placeholder="8文字以上（本命と異なるもの）"
+            placeholder={t('placeholder.dummyPassword')}
             secureTextEntry
             error={errors.dummyPassword}
           />
@@ -196,19 +200,19 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
 
         {/* プロフィール */}
         <Card style={styles.section}>
-          <Text style={styles.sectionTitle}>プロフィール（任意）</Text>
+          <Text style={styles.sectionTitle}>{t('auth.profile')}</Text>
 
           <Input
-            label="ニックネーム"
+            label={t('auth.nickname')}
             value={nickname}
             onChangeText={setNickname}
-            placeholder="表示名を入力"
+            placeholder={t('auth.enterNickname')}
             maxLength={20}
           />
         </Card>
 
         <Button
-          title="登録する"
+          title={t('auth.registerButton')}
           onPress={handleRegister}
           loading={isLoading}
           fullWidth
@@ -220,8 +224,8 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
           style={styles.loginLink}
         >
           <Text style={styles.loginLinkText}>
-            既にアカウントをお持ちの方は
-            <Text style={styles.loginLinkTextBold}>ログイン</Text>
+            {t('auth.hasAccount')}
+            <Text style={styles.loginLinkTextBold}>{t('auth.login')}</Text>
           </Text>
         </TouchableOpacity>
       </ScrollView>

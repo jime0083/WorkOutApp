@@ -4,12 +4,14 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { requireAuth, requireString } from '../utils/validators';
+import { getMessage } from '../i18n/messages';
 
 const db = getFirestore();
 
 interface BlockUserData {
   targetUserId: string;
   action: 'block' | 'unblock';
+  lang?: string;
 }
 
 interface BlockUserResult {
@@ -23,20 +25,23 @@ export const blockUser = onCall<BlockUserData>(
     // 認証チェック
     const userId = requireAuth(request.auth);
 
+    // 言語設定を取得
+    const lang = request.data.lang;
+
     // 入力検証
     requireString(request.data.targetUserId, 'targetUserId');
     const targetUserId = request.data.targetUserId;
     const action = request.data.action;
 
     if (action !== 'block' && action !== 'unblock') {
-      throw new HttpsError('invalid-argument', 'actionは"block"または"unblock"である必要があります');
+      throw new HttpsError('invalid-argument', getMessage(lang, 'block', 'invalidAction'));
     }
 
     // 自分自身をブロックできない
     if (targetUserId === userId) {
       return {
         success: false,
-        error: '自分自身をブロックすることはできません',
+        error: getMessage(lang, 'block', 'cannotBlockSelf'),
       };
     }
 
@@ -46,7 +51,7 @@ export const blockUser = onCall<BlockUserData>(
       if (!targetUserDoc.exists) {
         return {
           success: false,
-          error: 'ユーザーが見つかりません',
+          error: getMessage(lang, 'block', 'userNotFound'),
         };
       }
 
@@ -73,7 +78,7 @@ export const blockUser = onCall<BlockUserData>(
           if (data.status === 'blocked' && data.blockedBy === userId) {
             return {
               success: false,
-              error: 'このユーザーは既にブロックされています',
+              error: getMessage(lang, 'block', 'alreadyBlocked'),
             };
           }
 
@@ -104,7 +109,7 @@ export const blockUser = onCall<BlockUserData>(
         if (!existingFriendship) {
           return {
             success: false,
-            error: 'ブロック関係が見つかりません',
+            error: getMessage(lang, 'block', 'blockNotFound'),
           };
         }
 
@@ -114,7 +119,7 @@ export const blockUser = onCall<BlockUserData>(
         if (data.status !== 'blocked') {
           return {
             success: false,
-            error: 'このユーザーはブロックされていません',
+            error: getMessage(lang, 'block', 'notBlocked'),
           };
         }
 
@@ -122,7 +127,7 @@ export const blockUser = onCall<BlockUserData>(
         if (data.blockedBy !== userId) {
           return {
             success: false,
-            error: 'このブロックを解除する権限がありません',
+            error: getMessage(lang, 'block', 'notAuthorized'),
           };
         }
 
@@ -135,7 +140,7 @@ export const blockUser = onCall<BlockUserData>(
       }
     } catch (error) {
       console.error('Failed to block/unblock user:', error);
-      throw new HttpsError('internal', 'ブロック操作に失敗しました');
+      throw new HttpsError('internal', getMessage(lang, 'block', 'operationFailed'));
     }
   }
 );

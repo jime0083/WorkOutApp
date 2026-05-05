@@ -13,8 +13,10 @@ import {
   Switch,
   Alert,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { colors, typography, spacing } from '../../theme';
 import { dailyGoals } from '../../data/dummyData';
+import '../../i18n';
 
 interface SettingItemProps {
   title: string;
@@ -52,12 +54,17 @@ interface DummySettingsScreenProps {
 }
 
 export const DummySettingsScreen: React.FC<DummySettingsScreenProps> = () => {
+  const { t, i18n } = useTranslation();
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [healthKitEnabled, setHealthKitEnabled] = useState(true);
   const [locationEnabled, setLocationEnabled] = useState(false);
 
+  const locale = i18n.language === 'ja' ? 'ja-JP' : 'en-US';
+  const stepsUnit = i18n.language === 'ja' ? '歩' : 'steps';
+  const perDayUnit = i18n.language === 'ja' ? '分/日' : 'min/day';
+
   const showComingSoon = () => {
-    Alert.alert('お知らせ', 'この機能は近日公開予定です');
+    Alert.alert(t('dummy.notice'), t('dummy.comingSoon'));
   };
 
   return (
@@ -68,18 +75,18 @@ export const DummySettingsScreen: React.FC<DummySettingsScreenProps> = () => {
         showsVerticalScrollIndicator={false}
       >
         {/* ヘッダー */}
-        <Text style={styles.title}>設定</Text>
+        <Text style={styles.title}>{t('dummy.settings')}</Text>
 
         {/* プロフィールセクション */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>プロフィール</Text>
+          <Text style={styles.sectionTitle}>{t('dummy.profile')}</Text>
           <View style={styles.card}>
             <View style={styles.profileHeader}>
               <View style={styles.avatar}>
                 <Text style={styles.avatarText}>U</Text>
               </View>
               <View style={styles.profileInfo}>
-                <Text style={styles.profileName}>ユーザー</Text>
+                <Text style={styles.profileName}>{t('dummy.user')}</Text>
                 <Text style={styles.profileEmail}>user@example.com</Text>
               </View>
             </View>
@@ -87,30 +94,30 @@ export const DummySettingsScreen: React.FC<DummySettingsScreenProps> = () => {
               style={styles.editButton}
               onPress={showComingSoon}
             >
-              <Text style={styles.editButtonText}>編集</Text>
+              <Text style={styles.editButtonText}>{t('dummy.edit')}</Text>
             </TouchableOpacity>
           </View>
         </View>
 
         {/* 目標設定 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>目標設定</Text>
+          <Text style={styles.sectionTitle}>{t('dummy.goalSettings')}</Text>
           <View style={styles.card}>
             <SettingItem
-              title="1日の歩数目標"
-              subtitle={`${dailyGoals.steps.toLocaleString()} 歩`}
+              title={t('dummy.dailyStepsGoal')}
+              subtitle={`${dailyGoals.steps.toLocaleString(locale)} ${stepsUnit}`}
               onPress={showComingSoon}
             />
             <View style={styles.divider} />
             <SettingItem
-              title="消費カロリー目標"
+              title={t('dummy.caloriesBurnGoal')}
               subtitle={`${dailyGoals.calories} kcal`}
               onPress={showComingSoon}
             />
             <View style={styles.divider} />
             <SettingItem
-              title="エクササイズ目標"
-              subtitle={`${dailyGoals.exerciseMinutes} 分/日`}
+              title={t('dummy.exerciseGoal')}
+              subtitle={`${dailyGoals.exerciseMinutes} ${perDayUnit}`}
               onPress={showComingSoon}
             />
           </View>
@@ -118,11 +125,11 @@ export const DummySettingsScreen: React.FC<DummySettingsScreenProps> = () => {
 
         {/* 通知設定 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>通知</Text>
+          <Text style={styles.sectionTitle}>{t('dummy.notifications')}</Text>
           <View style={styles.card}>
             <SettingItem
-              title="プッシュ通知"
-              subtitle="目標達成やリマインダー"
+              title={t('dummy.pushNotifications')}
+              subtitle={t('dummy.goalAndReminder')}
               showArrow={false}
               rightElement={
                 <Switch
@@ -134,8 +141,8 @@ export const DummySettingsScreen: React.FC<DummySettingsScreenProps> = () => {
             />
             <View style={styles.divider} />
             <SettingItem
-              title="リマインダー"
-              subtitle="毎日の運動リマインダー"
+              title={t('dummy.reminder')}
+              subtitle={t('dummy.dailyExerciseReminder')}
               onPress={showComingSoon}
             />
           </View>
@@ -143,11 +150,11 @@ export const DummySettingsScreen: React.FC<DummySettingsScreenProps> = () => {
 
         {/* データ連携 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>データ連携</Text>
+          <Text style={styles.sectionTitle}>{t('dummy.dataIntegration')}</Text>
           <View style={styles.card}>
             <SettingItem
-              title="ヘルスケア連携"
-              subtitle="Apple ヘルスケアとデータを同期"
+              title={t('dummy.healthKitIntegration')}
+              subtitle={t('dummy.healthKitDescription')}
               showArrow={false}
               rightElement={
                 <Switch
@@ -159,8 +166,8 @@ export const DummySettingsScreen: React.FC<DummySettingsScreenProps> = () => {
             />
             <View style={styles.divider} />
             <SettingItem
-              title="位置情報"
-              subtitle="ワークアウトの経路を記録"
+              title={t('dummy.location')}
+              subtitle={t('dummy.locationDescription')}
               showArrow={false}
               rightElement={
                 <Switch
@@ -175,26 +182,26 @@ export const DummySettingsScreen: React.FC<DummySettingsScreenProps> = () => {
 
         {/* アプリ情報 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>アプリ情報</Text>
+          <Text style={styles.sectionTitle}>{t('dummy.appInfo')}</Text>
           <View style={styles.card}>
             <SettingItem
-              title="バージョン"
+              title={t('dummy.version')}
               subtitle="1.0.0"
               showArrow={false}
             />
             <View style={styles.divider} />
             <SettingItem
-              title="利用規約"
+              title={t('dummy.termsOfService')}
               onPress={showComingSoon}
             />
             <View style={styles.divider} />
             <SettingItem
-              title="プライバシーポリシー"
+              title={t('dummy.privacyPolicy')}
               onPress={showComingSoon}
             />
             <View style={styles.divider} />
             <SettingItem
-              title="ライセンス"
+              title={t('dummy.license')}
               onPress={showComingSoon}
             />
           </View>

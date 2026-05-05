@@ -31,6 +31,20 @@ export const colors = {
   gray900: '#212121',
   black: '#000000',
 
+  // グレースケール（オブジェクト形式）
+  gray: {
+    50: '#FAFAFA',
+    100: '#F5F5F5',
+    200: '#EEEEEE',
+    300: '#E0E0E0',
+    400: '#BDBDBD',
+    500: '#9E9E9E',
+    600: '#757575',
+    700: '#616161',
+    800: '#424242',
+    900: '#212121',
+  },
+
   // セマンティックカラー
   success: '#4CAF50',
   warning: '#FF9800',
@@ -47,6 +61,14 @@ export const colors = {
   textSecondary: '#757575',
   textDisabled: '#BDBDBD',
   textOnPrimary: '#FFFFFF',
+
+  // テキストカラー（オブジェクト形式）
+  text: {
+    primary: '#212121',
+    secondary: '#757575',
+    disabled: '#BDBDBD',
+    onPrimary: '#FFFFFF',
+  },
 
   // ボーダー
   border: '#E0E0E0',
@@ -75,8 +97,29 @@ export const typography = {
     '5xl': 32,
   },
 
+  // フォントサイズ（エイリアス）
+  sizes: {
+    xs: 10,
+    sm: 12,
+    md: 14,
+    lg: 16,
+    xl: 18,
+    '2xl': 20,
+    '3xl': 24,
+    '4xl': 28,
+    '5xl': 32,
+  },
+
   // フォントウェイト
   fontWeight: {
+    regular: '400' as const,
+    medium: '500' as const,
+    semibold: '600' as const,
+    bold: '700' as const,
+  },
+
+  // フォントウェイト（エイリアス）
+  weights: {
     regular: '400' as const,
     medium: '500' as const,
     semibold: '600' as const,

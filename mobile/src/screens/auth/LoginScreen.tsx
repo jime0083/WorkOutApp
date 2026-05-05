@@ -12,9 +12,11 @@ import {
   TouchableOpacity,
   Alert,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { Button, Input } from '../../components';
 import { useAuthStore } from '../../stores/authStore';
 import { colors, spacing, typography } from '../../theme';
+import '../../i18n';
 
 interface LoginScreenProps {
   onNavigateToRegister: () => void;
@@ -25,6 +27,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
   onNavigateToRegister,
   onLoginSuccess,
 }) => {
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [emailError, setEmailError] = useState('');
@@ -38,15 +41,15 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
     setPasswordError('');
 
     if (!email.trim()) {
-      setEmailError('メールアドレスを入力してください');
+      setEmailError(t('validation.emailRequired'));
       isValid = false;
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setEmailError('メールアドレスの形式が正しくありません');
+      setEmailError(t('validation.emailInvalid'));
       isValid = false;
     }
 
     if (!password) {
-      setPasswordError('パスワードを入力してください');
+      setPasswordError(t('validation.passwordRequired'));
       isValid = false;
     }
 
@@ -63,10 +66,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
     const result = await login(email, password);
 
     if (result.success) {
-      // ダミーモードかどうかを通知
       onLoginSuccess(result.isDummyLogin);
     } else {
-      Alert.alert('ログイン失敗', result.error || 'ログインに失敗しました');
+      Alert.alert(t('auth.registerFailed'), result.error || t('common.error'));
     }
   };
 
@@ -80,16 +82,16 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.header}>
-          <Text style={styles.title}>HealthCare</Text>
-          <Text style={styles.subtitle}>あなたの健康管理をサポート</Text>
+          <Text style={styles.title}>{t('dummy.title')}</Text>
+          <Text style={styles.subtitle}>{t('dummy.appSubtitle')}</Text>
         </View>
 
         <View style={styles.form}>
           <Input
-            label="メールアドレス"
+            label={t('auth.email')}
             value={email}
             onChangeText={setEmail}
-            placeholder="example@email.com"
+            placeholder={t('placeholder.email')}
             keyboardType="email-address"
             autoCapitalize="none"
             autoCorrect={false}
@@ -97,10 +99,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
           />
 
           <Input
-            label="パスワード"
+            label={t('auth.password')}
             value={password}
             onChangeText={setPassword}
-            placeholder="パスワードを入力"
+            placeholder={t('placeholder.password')}
             secureTextEntry
             error={passwordError}
           />
@@ -108,7 +110,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
           {error && <Text style={styles.errorText}>{error}</Text>}
 
           <Button
-            title="ログイン"
+            title={t('auth.login')}
             onPress={handleLogin}
             loading={isLoading}
             fullWidth
@@ -120,8 +122,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
             style={styles.registerLink}
           >
             <Text style={styles.registerLinkText}>
-              アカウントをお持ちでない方は
-              <Text style={styles.registerLinkTextBold}>新規登録</Text>
+              {t('auth.noAccount')}
+              <Text style={styles.registerLinkTextBold}>{t('auth.register')}</Text>
             </Text>
           </TouchableOpacity>
         </View>

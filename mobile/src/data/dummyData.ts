@@ -167,13 +167,15 @@ export const workoutTypeIcons: Record<Workout['type'], string> = {
 };
 
 // 時間フォーマット用ヘルパー
-export function formatDuration(minutes: number): string {
+export function formatDuration(minutes: number, locale: string = 'ja-JP'): string {
   const hours = Math.floor(minutes / 60);
   const mins = minutes % 60;
+  const isJapanese = locale.startsWith('ja');
+
   if (hours > 0) {
-    return `${hours}時間${mins}分`;
+    return isJapanese ? `${hours}時間${mins}分` : `${hours}h ${mins}m`;
   }
-  return `${mins}分`;
+  return isJapanese ? `${mins}分` : `${mins}m`;
 }
 
 // 距離フォーマット用ヘルパー
@@ -187,20 +189,21 @@ export function formatCalories(cal: number): string {
 }
 
 // 日付フォーマット用ヘルパー
-export function formatWorkoutDate(date: Date): string {
+export function formatWorkoutDate(date: Date, locale: string = 'ja-JP'): string {
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
   const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  const isJapanese = locale.startsWith('ja');
 
   if (diffHours < 1) {
-    return '直前';
+    return isJapanese ? '直前' : 'Just now';
   } else if (diffHours < 24) {
-    return `${diffHours}時間前`;
+    return isJapanese ? `${diffHours}時間前` : `${diffHours}h ago`;
   } else if (diffDays === 1) {
-    return '昨日';
+    return isJapanese ? '昨日' : 'Yesterday';
   } else if (diffDays < 7) {
-    return `${diffDays}日前`;
+    return isJapanese ? `${diffDays}日前` : `${diffDays} days ago`;
   } else {
     return `${date.getMonth() + 1}/${date.getDate()}`;
   }

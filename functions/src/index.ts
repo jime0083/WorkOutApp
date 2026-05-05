@@ -14,12 +14,10 @@ export * from './messaging';
 export * from './friends';
 
 // Subscription Functions
-// export * from './subscription/verifyReceipt';
-// export * from './subscription/checkExpiry';
+export * from './subscription';
 
 // Scheduled Functions
-// export * from './scheduled/resetMessageCount';
-// export * from './scheduled/cleanupExpired';
+export * from './scheduled';
 
 // Panic Functions
-// export * from './panic/deleteAll';
+export * from './panic';

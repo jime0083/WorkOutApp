@@ -7,6 +7,7 @@
 import { onDocumentCreated } from 'firebase-functions/v2/firestore';
 import { db } from '../utils/firebase';
 import { FieldValue } from 'firebase-admin/firestore';
+import { sendNewMessageNotification } from './sendPushNotification';
 
 interface MessageData {
   senderId: string;
@@ -79,7 +80,13 @@ export const onMessageCreate = onDocumentCreated(
 
       console.log(`Updated conversation ${conversationId} with new message`);
 
-      // プッシュ通知は別のFunctionで処理（Phase 10で実装）
+      // プッシュ通知を送信
+      await sendNewMessageNotification(
+        receiverId,
+        messageData.senderId,
+        lastMessageContent,
+        conversationId
+      );
     } catch (error) {
       console.error('Error processing message creation:', error);
       throw error;

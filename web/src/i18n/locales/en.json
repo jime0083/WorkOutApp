@@ -126,6 +126,29 @@
     "yearlyPrice": "$49.99/year",
     "yearlySaving": "Save about 17% with annual plan"
   },
+  "subscription": {
+    "title": "Premium Plan",
+    "currentPlan": "Current Plan",
+    "freePlan": "Free Plan",
+    "premiumPlan": "Premium Plan",
+    "selectPlan": "Select a Plan",
+    "monthly": "Monthly",
+    "yearly": "Yearly",
+    "monthlyPrice": "$4.99/month",
+    "yearlyPrice": "$49.99/year",
+    "yearlyDiscount": "Save 2 months",
+    "features": "Premium Features",
+    "unlimitedMessages": "Unlimited Messages",
+    "imageVideo": "Send & Receive Images/Videos",
+    "messageDelete": "Delete Messages",
+    "panicButton": "Emergency Delete Button",
+    "expiryDate": "Expires: {{date}}",
+    "autoRenew": "Auto-renew",
+    "manageSubscription": "Manage Subscription",
+    "manageNote": "Subscriptions can be purchased and managed from the iOS app",
+    "iosOnly": "* iOS app only",
+    "openAppStore": "Manage in App Store"
+  },
   "settings": {
     "title": "Settings",
     "language": "Language",
@@ -196,5 +219,30 @@
   "input": {
     "show": "Show",
     "hide": "Hide"
+  },
+  "accountDelete": {
+    "panicTitle": "Emergency Data Deletion",
+    "panicDescription": "Immediately and permanently delete all data. This action cannot be undone.",
+    "premiumOnly": "Premium Only",
+    "premiumRequired": "Premium membership required",
+    "warningTitle": "Data to be deleted",
+    "warningItem1": "All message history",
+    "warningItem2": "All friend relationships",
+    "warningItem3": "All media files",
+    "warningItem4": "Account information",
+    "panicButton": "Execute Emergency Deletion",
+    "panicConfirmTitle": "Final Confirmation",
+    "panicConfirmMessage": "This action cannot be undone. All data will be permanently deleted.",
+    "enterCode": "Enter \"{{code}}\" to confirm",
+    "invalidCode": "Invalid confirmation code",
+    "panicSuccess": "All data has been deleted",
+    "panicFailed": "Deletion failed",
+    "normalTitle": "Delete Account",
+    "normalDescription": "Delete your account. Sent messages will be shown as \"deleted\".",
+    "normalButton": "Delete Account",
+    "normalConfirmTitle": "Confirm Account Deletion",
+    "normalConfirmMessage": "Are you sure you want to delete your account? This action cannot be undone.",
+    "normalSuccess": "Account has been deleted",
+    "normalFailed": "Failed to delete account"
   }
 }

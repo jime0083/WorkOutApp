@@ -4,11 +4,14 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { requireAuth, requireString } from '../utils/validators';
+import { getMessage } from '../i18n/messages';
+import { sendFriendRequestNotification } from '../messaging/sendPushNotification';
 
 const db = getFirestore();
 
 interface SendFriendRequestData {
   targetVisibleUserId: string;
+  lang?: string;
 }
 
 interface SendFriendRequestResult {
@@ -22,6 +25,9 @@ export const sendFriendRequest = onCall<SendFriendRequestData>(
   async (request): Promise<SendFriendRequestResult> => {
     // 認証チェック
     const userId = requireAuth(request.auth);
+
+    // 言語設定を取得
+    const lang = request.data.lang;
 
     // 入力検証
     requireString(request.data.targetVisibleUserId, 'targetVisibleUserId');
@@ -38,7 +44,7 @@ export const sendFriendRequest = onCall<SendFriendRequestData>(
       if (usersSnapshot.empty) {
         return {
           success: false,
-          error: 'ユーザーが見つかりません',
+          error: getMessage(lang, 'friends', 'userNotFound'),
         };
       }
 
@@ -49,7 +55,7 @@ export const sendFriendRequest = onCall<SendFriendRequestData>(
       if (targetUserId === userId) {
         return {
           success: false,
-          error: '自分自身に友達申請はできません',
+          error: getMessage(lang, 'friends', 'cannotAddSelf'),
         };
       }
 
@@ -65,13 +71,13 @@ export const sendFriendRequest = onCall<SendFriendRequestData>(
           if (data.status === 'accepted') {
             return {
               success: false,
-              error: 'すでに友達です',
+              error: getMessage(lang, 'friends', 'alreadyFriends'),
             };
           }
           if (data.status === 'pending') {
             return {
               success: false,
-              error: '友達申請は既に送信されています',
+              error: getMessage(lang, 'friends', 'requestAlreadySent'),
             };
           }
           if (data.status === 'blocked') {
@@ -79,13 +85,13 @@ export const sendFriendRequest = onCall<SendFriendRequestData>(
             if (data.blockedBy === targetUserId) {
               return {
                 success: false,
-                error: 'このユーザーに友達申請を送ることができません',
+                error: getMessage(lang, 'friends', 'cannotSendRequest'),
               };
             }
             // 自分がブロックしている場合は、ブロック解除が必要
             return {
               success: false,
-              error: 'ブロックを解除してから友達申請を送ってください',
+              error: getMessage(lang, 'friends', 'unblockFirst'),
             };
           }
         }
@@ -104,13 +110,16 @@ export const sendFriendRequest = onCall<SendFriendRequestData>(
 
       const docRef = await db.collection('friendships').add(friendshipData);
 
+      // プッシュ通知を送信
+      await sendFriendRequestNotification(targetUserId, userId, docRef.id);
+
       return {
         success: true,
         friendshipId: docRef.id,
       };
     } catch (error) {
       console.error('Failed to send friend request:', error);
-      throw new HttpsError('internal', '友達申請の送信に失敗しました');
+      throw new HttpsError('internal', getMessage(lang, 'friends', 'sendFailed'));
     }
   }
 );

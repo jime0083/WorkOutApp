@@ -8,7 +8,12 @@
       "Bash(npm install:*)",
       "Bash(npm create:*)",
       "Bash(npx tsc:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(firebase --version:*)",
+      "Bash(firebase projects:list:*)",
+      "Bash(firebase hosting:sites:list:*)",
+      "Bash(ls:*)",
+      "Bash(chmod:*)"
     ]
   }
 }

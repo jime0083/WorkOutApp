@@ -21,124 +21,9 @@
 
 ---
 
-## Phase 8.5: 国際化（i18n）
-前提: Phase 8 完了後
-
-### 8.5.1 Web アプリ国際化
-- [x] react-i18next 導入 [完了: 2026-05-02]
-- [x] 翻訳ファイル構成作成（locales/ja.json, locales/en.json）[完了: 2026-05-02]
-- [x] 既存コンポーネントのテキスト国際化対応 [完了: 2026-05-02]
-- [x] 言語切り替えUI実装（設定画面）[完了: 2026-05-02]
-- [x] ブラウザ言語自動検出 [完了: 2026-05-02]
-
-### 8.5.2 iOS アプリ国際化
-- [ ] react-i18next 導入
-- [ ] 翻訳ファイル構成作成
-- [ ] 既存コンポーネントのテキスト国際化対応
-- [ ] 言語切り替えUI実装（設定画面）
-- [ ] デバイス言語自動検出
-
-### 8.5.3 Cloud Functions 国際化
-- [ ] エラーメッセージ多言語対応
-- [ ] 通知メッセージ多言語対応
-
----
-
-## Phase 9: 課金機能
-前提: Phase 8.5 完了後、Manual Work 4 完了後
-
-### 9.1 Cloud Functions（課金）
-- [ ] verifyAppleReceipt: レシート検証
-- [ ] checkSubscriptionExpiry: 定期課金状態チェック（Scheduled）
-- [ ] resetMonthlyMessageCount: 月次メッセージ数リセット（Scheduled）
-
-### 9.2 iOS 課金実装
-- [ ] StoreKit 導入
-- [ ] 商品情報取得
-- [ ] 購入処理
-- [ ] レシート送信
-
-### 9.3 Web 課金UI
-- [ ] SubscriptionPage（課金管理画面）
-- [ ] プラン選択UI
-- [ ] 課金状態表示
-- [ ] useSubscription フック
-
----
-
-## Phase 10: プッシュ通知
-前提: Phase 9 完了後、Manual Work 3 完了後
-
-### 10.1 Cloud Functions（通知）
-- [ ] sendPushNotification: FCM送信
-- [ ] onMessageCreate への通知トリガー追加
-
-### 10.2 iOS 通知実装
-- [ ] FCM 導入
-- [ ] FCMトークン取得・保存
-- [ ] 通知受信ハンドラー
-- [ ] 偽装通知表示（「アップデートしてください」）
-
----
-
-## Phase 11: セキュリティ機能
-前提: Phase 10 完了後
-
-### 11.1 スクリーンショット防止
-- [ ] iOS: react-native-screenshot-prevent 導入
-- [ ] iOS: スクショ防止ロジック実装
-- [ ] Web: CSS選択防止
-- [ ] Web: 右クリック・ショートカット防止
-
-### 11.2 緊急全データ削除（パニックボタン）
-- [ ] Cloud Functions: panicDelete 実装
-- [ ] Web: AccountDeletePage 実装
-- [ ] Web: パニックボタンUI
-- [ ] 課金チェックロジック（緊急削除時）
-
-### 11.3 アカウント削除
-- [ ] アカウント削除UI
-- [ ] 削除確認ダイアログ
-- [ ] 関連データ削除ロジック
-
----
-
 ## ============================================
 ## 以下のPhaseは新規タスク追加時も常に最後に配置
 ## ============================================
-
-## Phase 12: テスト
-前提: Phase 11 完了後
-
-### 12.1 テスト環境構築
-- [ ] Jest 設定（iOS）
-- [ ] Jest 設定（Web）
-- [ ] React Testing Library 設定
-- [ ] Firebase Emulator テスト設定
-
-### 12.2 ユニットテスト
-- [ ] 認証サービステスト
-- [ ] メッセージサービステスト
-- [ ] 友達サービステスト
-- [ ] 課金サービステスト
-- [ ] ユーティリティ関数テスト
-
-### 12.3 統合テスト
-- [ ] 認証フローテスト
-- [ ] メッセージ送受信テスト
-- [ ] 友達申請フローテスト
-
-### 12.4 Security Rules テスト
-- [ ] Firestore Security Rules テスト
-- [ ] Storage Security Rules テスト
-
-### 12.5 E2Eテスト
-- [ ] Detox 設定（iOS）
-- [ ] Playwright 設定（Web）
-- [ ] 認証E2Eテスト
-- [ ] メッセージングE2Eテスト
-
----
 
 ## Phase 13: ビルド・デプロイ準備
 前提: Phase 12 完了後、Manual Work 5 完了後
@@ -153,7 +38,7 @@
 ### 13.2 Web ビルド設定
 - [ ] 本番環境設定
 - [ ] ビルド最適化
-- [ ] GitHub Pages 用設定（base path等）
+- [ ] Firebase Hosting 用設定
 
 ### 13.3 Cloud Functions デプロイ
 - [ ] 環境変数設定
@@ -169,7 +54,7 @@
 前提: Phase 13 完了後、Manual Work 6, 7 完了後
 
 ### 14.1 Web 公開
-- [ ] GitHub Pages デプロイ
+- [ ] Firebase Hosting デプロイ
 - [ ] 動作確認
 
 ### 14.2 iOS 公開

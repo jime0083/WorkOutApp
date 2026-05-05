@@ -23,8 +23,10 @@
       "@scheduled/*": ["src/scheduled/*"],
       "@panic/*": ["src/panic/*"],
       "@utils/*": ["src/utils/*"]
-    }
+    },
+    "types": ["node"]
   },
   "compileOnSave": true,
-  "include": ["src/**/*"]
+  "include": ["src/**/*"],
+  "exclude": ["src/**/__tests__/**", "src/**/*.test.ts", "src/**/*.spec.ts"]
 }

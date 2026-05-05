@@ -10,23 +10,31 @@ import {
   StyleSheet,
   SafeAreaView,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { colors, typography, spacing } from '../../theme';
 import { WeeklyChart, HealthCard } from '../../components/dummy';
 import {
   weeklyData,
   recentWorkouts,
-  workoutTypeLabels,
   formatDuration,
   formatDistance,
   formatCalories,
   formatWorkoutDate,
 } from '../../data/dummyData';
+import '../../i18n';
 
 interface DummyStatsScreenProps {
   navigation?: unknown;
 }
 
 export const DummyStatsScreen: React.FC<DummyStatsScreenProps> = () => {
+  const { t, i18n } = useTranslation();
+  const locale = i18n.language === 'ja' ? 'ja-JP' : 'en-US';
+
+  const getWorkoutTypeLabel = (type: string): string => {
+    return t(`dummy.workoutTypes.${type}`) as string;
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView
@@ -35,14 +43,14 @@ export const DummyStatsScreen: React.FC<DummyStatsScreenProps> = () => {
         showsVerticalScrollIndicator={false}
       >
         {/* ヘッダー */}
-        <Text style={styles.title}>統計</Text>
+        <Text style={styles.title}>{t('dummy.statistics')}</Text>
 
         {/* 週間歩数チャート */}
         <View style={styles.section}>
           <WeeklyChart
             data={weeklyData}
             dataKey="steps"
-            title="週間歩数"
+            title={t('dummy.weeklySteps')}
             color={colors.primary}
           />
         </View>
@@ -52,14 +60,14 @@ export const DummyStatsScreen: React.FC<DummyStatsScreenProps> = () => {
           <WeeklyChart
             data={weeklyData}
             dataKey="calories"
-            title="週間消費カロリー"
+            title={t('dummy.weeklyCalories')}
             color="#FA114F"
           />
         </View>
 
         {/* 最近のワークアウト */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>最近のワークアウト</Text>
+          <Text style={styles.sectionTitle}>{t('dummy.recentWorkouts')}</Text>
           {recentWorkouts.map((workout) => (
             <View key={workout.id} style={styles.workoutCard}>
               <View style={styles.workoutHeader}>
@@ -75,29 +83,29 @@ export const DummyStatsScreen: React.FC<DummyStatsScreenProps> = () => {
                 </View>
                 <View style={styles.workoutInfo}>
                   <Text style={styles.workoutType}>
-                    {workoutTypeLabels[workout.type]}
+                    {getWorkoutTypeLabel(workout.type)}
                   </Text>
                   <Text style={styles.workoutDate}>
-                    {formatWorkoutDate(workout.date)}
+                    {formatWorkoutDate(workout.date, locale)}
                   </Text>
                 </View>
               </View>
               <View style={styles.workoutStats}>
                 <View style={styles.workoutStat}>
-                  <Text style={styles.workoutStatLabel}>時間</Text>
+                  <Text style={styles.workoutStatLabel}>{t('dummy.time')}</Text>
                   <Text style={styles.workoutStatValue}>
                     {formatDuration(workout.duration)}
                   </Text>
                 </View>
                 <View style={styles.workoutStat}>
-                  <Text style={styles.workoutStatLabel}>カロリー</Text>
+                  <Text style={styles.workoutStatLabel}>{t('dummy.calories')}</Text>
                   <Text style={styles.workoutStatValue}>
                     {formatCalories(workout.calories)}
                   </Text>
                 </View>
                 {workout.distance && (
                   <View style={styles.workoutStat}>
-                    <Text style={styles.workoutStatLabel}>距離</Text>
+                    <Text style={styles.workoutStatLabel}>{t('dummy.distance')}</Text>
                     <Text style={styles.workoutStatValue}>
                       {formatDistance(workout.distance)}
                     </Text>
@@ -110,28 +118,28 @@ export const DummyStatsScreen: React.FC<DummyStatsScreenProps> = () => {
 
         {/* トレンドカード */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>トレンド</Text>
+          <Text style={styles.sectionTitle}>{t('dummy.trends')}</Text>
           <View style={styles.trendGrid}>
             <View style={styles.trendCard}>
               <HealthCard
-                title="平均歩数"
+                title={t('dummy.averageSteps')}
                 value={Math.round(
                   weeklyData.reduce((sum, d) => sum + d.steps, 0) / 7
-                ).toLocaleString()}
-                unit="歩/日"
+                ).toLocaleString(locale)}
+                unit={t('dummy.stepsPerDay')}
                 color={colors.primary}
-                subtitle="過去7日間"
+                subtitle={t('dummy.last7Days')}
               />
             </View>
             <View style={styles.trendCard}>
               <HealthCard
-                title="平均カロリー"
+                title={t('dummy.averageCalories')}
                 value={Math.round(
                   weeklyData.reduce((sum, d) => sum + d.calories, 0) / 7
                 )}
-                unit="kcal/日"
+                unit={t('dummy.caloriesPerDay')}
                 color="#FA114F"
-                subtitle="過去7日間"
+                subtitle={t('dummy.last7Days')}
               />
             </View>
           </View>
