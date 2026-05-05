@@ -25,44 +25,17 @@
 ## 以下のPhaseは新規タスク追加時も常に最後に配置
 ## ============================================
 
-## Phase 13: ビルド・デプロイ準備
-前提: Phase 12 完了後、Manual Work 5 完了後
-
-### 13.1 iOS ビルド設定
-- [ ] Bundle Identifier 設定
-- [ ] App Icon 設定
-- [ ] Launch Screen 設定
-- [ ] Info.plist 設定
-- [ ] Release ビルド設定
-
-### 13.2 Web ビルド設定
-- [ ] 本番環境設定
-- [ ] ビルド最適化
-- [ ] Firebase Hosting 用設定
-
-### 13.3 Cloud Functions デプロイ
-- [ ] 環境変数設定
-- [ ] デプロイスクリプト作成
-
-### 13.4 Firestore / Storage デプロイ
-- [ ] Security Rules デプロイ
-- [ ] インデックスデプロイ
-
----
-
 ## Phase 14: 公開作業
-前提: Phase 13 完了後、Manual Work 6, 7 完了後
+前提: Phase 13 完了後、Manual Work 6 完了後
 
 ### 14.1 Web 公開
 - [ ] Firebase Hosting デプロイ
 - [ ] 動作確認
 
 ### 14.2 iOS 公開
-- [ ] TestFlight ビルドアップロード
-- [ ] TestFlight テスト
-- [ ] App Store 審査提出
+- [ ] App Store 審査提出（Work 6 で実施）
 - [ ] 審査対応（必要に応じて）
 
 ### 14.3 リリース後
 - [ ] 本番環境動作確認
-- [ ] モニタリング設定
+- [ ] モニタリング設定（Work 7 で実施）

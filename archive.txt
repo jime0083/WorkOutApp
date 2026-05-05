@@ -34,6 +34,29 @@ Phase/Workを移動する前に以下を確認:
 
 ---
 
+## Phase 13: ビルド・デプロイ準備
+完了日: 2026-05-05
+
+### 13.1 iOS ビルド設定
+- [x] Bundle Identifier 設定（com.okiroya.workoutapp）[完了: 2026-05-05]
+- [x] Info.plist 設定（HealthTrack表示名、プッシュ通知、暗号化申告）[完了: 2026-05-05]
+- [x] Launch Screen 設定（既存）[完了: 2026-05-05]
+
+### 13.2 Web ビルド設定
+- [x] vite.config.ts 本番最適化 [完了: 2026-05-05]
+- [x] チャンク分割設定（vendor, firebase, i18n）[完了: 2026-05-05]
+- [x] Firebase Hosting 用設定（firebase.json）[完了: 2026-05-05]
+
+### 13.3 Cloud Functions デプロイ
+- [x] Product ID 修正 [完了: 2026-05-05]
+- [x] デプロイスクリプト作成（scripts/deploy.sh）[完了: 2026-05-05]
+
+### 13.4 Firestore / Storage デプロイ
+- [x] Security Rules 確認 [完了: 2026-05-05]
+- [x] インデックス設定確認 [完了: 2026-05-05]
+
+---
+
 ## Phase 12: テスト
 完了日: 2026-05-04
 
