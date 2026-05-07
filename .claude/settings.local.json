@@ -13,7 +13,8 @@
       "Bash(firebase projects:list:*)",
       "Bash(firebase hosting:sites:list:*)",
       "Bash(ls:*)",
-      "Bash(chmod:*)"
+      "Bash(chmod:*)",
+      "Bash(sips:*)"
     ]
   }
 }
