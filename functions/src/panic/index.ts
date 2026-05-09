@@ -1,4 +1,4 @@
 /**
  * Panic Functions
  */
-export { panicDelete, deleteAccount } from './panicDelete';
+export { panicDelete, deleteAccount, deleteAllMessages } from './panicDelete';

@@ -24,6 +24,7 @@ import {
   heartRateData,
   sleepData,
 } from '../../data/dummyData';
+import { HeaderMenu } from '../../components/HeaderMenu';
 import '../../i18n';
 
 interface DummyHomeScreenProps {
@@ -43,14 +44,19 @@ export const DummyHomeScreen: React.FC<DummyHomeScreenProps> = () => {
       >
         {/* ヘッダー */}
         <View style={styles.header}>
-          <Text style={styles.greeting}>{t('dummy.goodMorning')}</Text>
-          <Text style={styles.date}>
-            {new Date().toLocaleDateString(locale, {
-              month: 'long',
-              day: 'numeric',
-              weekday: 'long',
-            })}
-          </Text>
+          <View style={styles.headerContent}>
+            <View style={styles.headerTextContainer}>
+              <Text style={styles.greeting}>{t('dummy.goodMorning')}</Text>
+              <Text style={styles.date}>
+                {new Date().toLocaleDateString(locale, {
+                  month: 'long',
+                  day: 'numeric',
+                  weekday: 'long',
+                })}
+              </Text>
+            </View>
+            <HeaderMenu />
+          </View>
         </View>
 
         {/* アクティビティリング */}
@@ -145,6 +151,14 @@ const styles = StyleSheet.create({
   },
   header: {
     marginBottom: spacing.lg,
+  },
+  headerContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  headerTextContainer: {
+    flex: 1,
   },
   greeting: {
     fontSize: typography.sizes['2xl'],

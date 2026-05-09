@@ -1,27 +1,40 @@
 /**
  * RootNavigator - アプリのルートナビゲーター
- * 認証状態に応じて表示するナビゲーターを切り替え
+ * オンボーディング → 認証 → メイン の流れを管理
  */
-import React from 'react';
+import React, { useEffect } from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useAuthStore } from '../stores/authStore';
+import { useOnboardingStore } from '../stores/onboardingStore';
 import type { RootStackParamList } from './types';
 import { AuthNavigator } from './AuthNavigator';
 import { MainNavigator } from './MainNavigator';
+import { OnboardingScreen } from '../screens/onboarding';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export const RootNavigator: React.FC = () => {
-  const { user, isLoading } = useAuthStore();
+  const { user, isLoading: authLoading } = useAuthStore();
+  const {
+    isOnboardingComplete,
+    isLoading: onboardingLoading,
+    initialize,
+  } = useOnboardingStore();
 
-  // ローディング中は何も表示しない（スプラッシュ画面などを表示する場合はここで）
-  if (isLoading) {
+  useEffect(() => {
+    initialize();
+  }, [initialize]);
+
+  // ローディング中は何も表示しない
+  if (authLoading || onboardingLoading) {
     return null;
   }
 
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      {user ? (
+      {!isOnboardingComplete ? (
+        <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+      ) : user ? (
         <Stack.Screen name="Main" component={MainNavigator} />
       ) : (
         <Stack.Screen name="Auth" component={AuthNavigator} />

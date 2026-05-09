@@ -168,6 +168,81 @@ export const panicDelete = onCall<PanicDeleteData>(
 /**
  * 通常のアカウント削除（プレミアム不要）
  */
+/**
+ * 全メッセージ削除のみ（アカウントは残す）
+ * プレミアムユーザー限定
+ * 設定で本物のパスワード → メッセージでダミーパスワードの場合に使用
+ */
+export const deleteAllMessages = onCall<{ lang?: string }>(
+  { region: 'asia-northeast1' },
+  async (request): Promise<PanicDeleteResult> => {
+    // 認証チェック
+    const userId = requireAuth(request.auth);
+    const lang = request.data.lang;
+
+    // プレミアムユーザーチェック
+    const isPremium = await isPremiumUser(userId);
+    if (!isPremium) {
+      return {
+        success: false,
+        error:
+          lang === 'en'
+            ? 'This feature requires a premium subscription'
+            : 'この機能はプレミアム会員限定です',
+      };
+    }
+
+    try {
+      let deletedMessages = 0;
+      let deletedConversations = 0;
+
+      // ユーザーが参加している会話を取得して削除
+      const conversationsSnapshot = await db
+        .collection('conversations')
+        .where('participantIds', 'array-contains', userId)
+        .get();
+
+      for (const conversationDoc of conversationsSnapshot.docs) {
+        // 会話内のメッセージを削除
+        const messagesSnapshot = await conversationDoc.ref
+          .collection('messages')
+          .get();
+
+        const messageBatch = db.batch();
+        for (const messageDoc of messagesSnapshot.docs) {
+          messageBatch.delete(messageDoc.ref);
+          deletedMessages++;
+        }
+        await messageBatch.commit();
+
+        // 会話を削除
+        await conversationDoc.ref.delete();
+        deletedConversations++;
+      }
+
+      console.log(`All messages deleted for user: ${userId}`);
+
+      return {
+        success: true,
+        deletedData: {
+          messages: deletedMessages,
+          conversations: deletedConversations,
+          friendships: 0,
+          files: 0,
+        },
+      };
+    } catch (error) {
+      console.error('Failed to delete all messages:', error);
+      throw new HttpsError(
+        'internal',
+        lang === 'en'
+          ? 'Failed to delete messages'
+          : 'メッセージの削除に失敗しました'
+      );
+    }
+  }
+);
+
 export const deleteAccount = onCall<{ lang?: string }>(
   { region: 'asia-northeast1' },
   async (request): Promise<{ success: boolean; error?: string }> => {

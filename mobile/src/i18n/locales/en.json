@@ -309,6 +309,16 @@
     "last7Days": "Last 7 days",
     "appSubtitle": "Supporting your health management"
   },
+  "onboarding": {
+    "slide1Title": "Secret Messaging App",
+    "slide1Description": "This is a messaging app for secret conversations with your partner. You can safely exchange messages without your partner knowing.",
+    "slide2Title": "Two Sets of Credentials",
+    "slide2Description": "Set up two email addresses and passwords. Use them to display dummy message screens or delete all messages to safely protect your private conversations.",
+    "slide3Title": "Account Setup",
+    "slide3Description": "Set up a dummy email/password and a real email/password - two sets of credentials for your account.",
+    "slide4Title": "Start Free",
+    "slide4Description": "You can send up to 10 messages per month for free."
+  },
   "notification": {
     "permissionTitle": "Enable Notifications",
     "permissionMessage": "Allow notifications to receive messages and friend requests.",

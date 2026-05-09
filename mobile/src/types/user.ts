@@ -36,6 +36,14 @@ export interface User {
   createdAt: Date;
   updatedAt: Date;
   lastLoginAt: Date;
+
+  // 言語設定
+  language?: string;
+}
+
+// プレミアム判定ヘルパー
+export function isPremiumUser(user: User | null): boolean {
+  return user?.subscriptionStatus === 'premium';
 }
 
 // ユーザー作成時の入力

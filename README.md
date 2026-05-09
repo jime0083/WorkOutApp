@@ -1,4 +1,4 @@
-# WorkOutApp
+# Health Manager (WorkOutApp)
 
 偽装ヘルスケアアプリとして動作する秘密のメッセージングサービス
 
@@ -6,8 +6,7 @@
 
 ```
 WorkOutApp/
-├── mobile/          # React Native (iOS) アプリ
-├── web/             # React SPA (メッセージング機能)
+├── mobile/          # React Native (iOS) アプリ（メッセージング機能含む）
 ├── functions/       # Firebase Cloud Functions
 ├── docs/            # ドキュメント
 │   ├── requirements.md      # 要件定義書
@@ -23,13 +22,11 @@ WorkOutApp/
 | レイヤー | 技術 |
 |----------|------|
 | iOS アプリ | React Native |
-| Web アプリ | React (Vite) |
 | 認証 | Firebase Authentication |
 | データベース | Firestore |
 | サーバー処理 | Firebase Cloud Functions |
 | プッシュ通知 | Firebase Cloud Messaging |
 | 課金 | Apple In-App Purchase |
-| Web ホスティング | GitHub Pages |
 
 ## セットアップ
 
@@ -54,10 +51,6 @@ cd mobile
 npm install
 cd ios && pod install && cd ..
 
-# Web アプリ
-cd web
-npm install
-
 # Cloud Functions
 cd functions
 npm install
@@ -69,10 +62,6 @@ npm install
 # iOS アプリ
 cd mobile
 npm run ios
-
-# Web アプリ
-cd web
-npm run dev
 
 # Firebase Emulator
 firebase emulators:start

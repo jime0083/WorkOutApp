@@ -1,18 +1,27 @@
 /**
- * MainNavigator - ダミー画面用タブナビゲーター
- * フィットネスアプリ風の偽装ナビゲーション
+ * MainNavigator - メインナビゲーター
+ * ダミータブ + 認証が必要な画面のスタックナビゲーター
  */
 import React from 'react';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Text, StyleSheet } from 'react-native';
 import { colors, typography } from '../theme';
-import type { DummyTabParamList } from './types';
+import type { MainStackParamList, DummyTabParamList } from './types';
 import {
   DummyHomeScreen,
   DummyStatsScreen,
   DummySettingsScreen,
 } from '../screens/dummy';
+import { PasswordPromptScreen } from '../screens/auth';
+import { SettingsScreen } from '../screens/settings';
+import {
+  MessagesScreen,
+  DummyMessagesScreen,
+  ConversationScreen,
+} from '../screens/messages';
 
+const Stack = createNativeStackNavigator<MainStackParamList>();
 const Tab = createBottomTabNavigator<DummyTabParamList>();
 
 // タブアイコンコンポーネント
@@ -25,7 +34,8 @@ const TabIcon: React.FC<TabIconProps> = ({ focused, icon }) => (
   <Text style={[styles.icon, focused && styles.iconFocused]}>{icon}</Text>
 );
 
-export const MainNavigator: React.FC = () => {
+// ダミータブナビゲーター
+const DummyTabNavigator: React.FC = () => {
   return (
     <Tab.Navigator
       screenOptions={{
@@ -57,7 +67,7 @@ export const MainNavigator: React.FC = () => {
         }}
       />
       <Tab.Screen
-        name="Settings"
+        name="DummySettings"
         component={DummySettingsScreen}
         options={{
           tabBarLabel: '設定',
@@ -67,6 +77,23 @@ export const MainNavigator: React.FC = () => {
         }}
       />
     </Tab.Navigator>
+  );
+};
+
+export const MainNavigator: React.FC = () => {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="DummyTabs" component={DummyTabNavigator} />
+      <Stack.Screen
+        name="PasswordPrompt"
+        component={PasswordPromptScreen}
+        options={{ presentation: 'modal' }}
+      />
+      <Stack.Screen name="Settings" component={SettingsScreen} />
+      <Stack.Screen name="Messages" component={MessagesScreen} />
+      <Stack.Screen name="DummyMessages" component={DummyMessagesScreen} />
+      <Stack.Screen name="Conversation" component={ConversationScreen} />
+    </Stack.Navigator>
   );
 };
 

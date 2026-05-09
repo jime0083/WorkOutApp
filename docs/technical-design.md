@@ -7,19 +7,20 @@
 ```
 ┌──────────────────────────────────────────────────────────────────────────┐
 │                              クライアント層                               │
-│  ┌─────────────────────────┐    ┌─────────────────────────────────────┐ │
-│  │     iOS App (React Native)   │    │      Web App (React SPA)          │ │
-│  │  ┌─────────────────────┐│    │  ┌─────────────────────────────┐   │ │
-│  │  │ 偽装UI (ヘルスケア)  ││    │  │  メッセージングUI (LINE風)   │   │ │
-│  │  │ - ダミーダッシュボード││    │  │  - トーク一覧              │   │ │
-│  │  │ - 設定画面          ││    │  │  - トークルーム            │   │ │
-│  │  └─────────────────────┘│    │  │  - 友達管理               │   │ │
-│  │  ┌─────────────────────┐│    │  │  - プロフィール           │   │ │
-│  │  │ 通知ハンドラー       ││    │  └─────────────────────────────┘   │ │
-│  │  └─────────────────────┘│    │  ┌─────────────────────────────┐   │ │
-│  └─────────────────────────┘    │  │  Firebase SDK               │   │ │
-│                                  │  └─────────────────────────────┘   │ │
-│                                  └─────────────────────────────────────┘ │
+│  ┌──────────────────────────────────────────────────────────────────┐   │
+│  │                    iOS App (React Native)                         │   │
+│  │  ┌─────────────────────┐  ┌──────────────────────────────────┐   │   │
+│  │  │ 偽装UI (ヘルスケア)  │  │  メッセージングUI                 │   │   │
+│  │  │ - ダミーダッシュボード│  │  - トーク一覧                    │   │   │
+│  │  │ - 設定画面（認証後）  │  │  - トークルーム                  │   │   │
+│  │  └─────────────────────┘  │  - 友達管理                      │   │   │
+│  │  ┌─────────────────────┐  │  - プロフィール                  │   │   │
+│  │  │ 通知ハンドラー       │  └──────────────────────────────────┘   │   │
+│  │  └─────────────────────┘                                         │   │
+│  │  ┌─────────────────────┐                                         │   │
+│  │  │ Firebase SDK        │                                         │   │
+│  │  └─────────────────────┘                                         │   │
+│  └──────────────────────────────────────────────────────────────────┘   │
 └──────────────────────────────────────────────────────────────────────────┘
                                       │
                                       │ HTTPS
@@ -48,23 +49,31 @@
 
 ```
 [メッセージ送信フロー]
-User A (Web) → Firestore (messages) → Cloud Functions (onWrite trigger)
+User A (iOS) → Firestore (messages) → Cloud Functions (onWrite trigger)
                                             ↓
                                      FCM → User B (iOS App)
                                             ↓
                                      「アップデートしてください」通知
 
-[認証フロー]
-User → iOS App → ログイン画面
-                    ↓
-        ┌──────────┴──────────┐
-        ↓                     ↓
-   ダミーPW入力           本命PW入力
-        ↓                     ↓
-   Firebase Auth          Firebase Auth
-   (dummy credential)     (real credential)
-        ↓                     ↓
-   ダミー画面表示         Safari起動 → Web App
+[認証フロー（2段階認証）]
+User → iOS App → ダミーホーム画面（自動表示）
+                    │
+                    ├─ ヘッダーメニュー → 設定画面へ（1回目認証）
+                    │                       │
+                    │         ┌─────────────┴─────────────┐
+                    │         ↓                           ↓
+                    │    ダミーPW入力                 本命PW入力
+                    │         ↓                           ↓
+                    │    設定画面表示               設定画面表示
+                    │                                     │
+                    │                                     ▼
+                    │                        メッセージボタン（2回目認証）
+                    │                                     │
+                    │                    ┌────────────────┼────────────────┐
+                    │                    ↓                ↓                ↓
+                    │              両方本命         両方ダミー       本命→ダミー
+                    │                    ↓                ↓                ↓
+                    │              本物メッセージ   ダミーメッセージ  全削除実行
 ```
 
 ---
@@ -486,92 +495,7 @@ src/
     └── screenshot.ts            # スクショ防止
 ```
 
-### 4.2 Webアプリ（React SPA）
-
-```
-src/
-├── App.tsx                      # エントリーポイント
-├── main.tsx                     # Vite エントリー
-├── routes/
-│   ├── index.tsx                # ルート定義
-│   ├── ProtectedRoute.tsx       # 認証ガード
-│   └── PublicRoute.tsx          # 未認証ルート
-├── pages/
-│   ├── auth/
-│   │   ├── LoginPage.tsx        # ログイン
-│   │   └── RegisterPage.tsx     # 新規登録
-│   ├── chat/
-│   │   ├── ConversationListPage.tsx  # トーク一覧
-│   │   └── ChatRoomPage.tsx     # トークルーム
-│   ├── friends/
-│   │   ├── FriendListPage.tsx   # 友達一覧
-│   │   ├── FriendRequestPage.tsx # 友達申請
-│   │   └── AddFriendPage.tsx    # 友達追加
-│   ├── profile/
-│   │   └── ProfileEditPage.tsx  # プロフィール編集
-│   └── settings/
-│       ├── SettingsPage.tsx     # 設定
-│       ├── SubscriptionPage.tsx # 課金管理
-│       └── AccountDeletePage.tsx # アカウント削除
-├── components/
-│   ├── common/
-│   │   ├── Button.tsx
-│   │   ├── Input.tsx
-│   │   ├── Modal.tsx
-│   │   ├── Avatar.tsx
-│   │   └── Loading.tsx
-│   ├── chat/
-│   │   ├── MessageBubble.tsx    # メッセージ吹き出し
-│   │   ├── MessageInput.tsx     # 入力エリア
-│   │   ├── MessageList.tsx      # メッセージ一覧
-│   │   ├── ConversationItem.tsx # 会話アイテム
-│   │   ├── ImagePreview.tsx     # 画像プレビュー
-│   │   └── VideoPlayer.tsx      # 動画プレイヤー
-│   ├── friends/
-│   │   ├── FriendItem.tsx       # 友達アイテム
-│   │   └── FriendRequestItem.tsx # 申請アイテム
-│   └── layout/
-│       ├── Header.tsx           # ヘッダー
-│       ├── BottomNav.tsx        # ボトムナビ
-│       └── Layout.tsx           # レイアウト
-├── services/
-│   ├── firebase.ts              # Firebase初期化
-│   ├── auth.ts                  # 認証サービス
-│   ├── message.ts               # メッセージサービス
-│   ├── friend.ts                # 友達サービス
-│   ├── subscription.ts          # 課金サービス
-│   └── storage.ts               # Storageサービス
-├── hooks/
-│   ├── useAuth.ts               # 認証
-│   ├── useMessages.ts           # メッセージ取得
-│   ├── useConversations.ts      # 会話一覧
-│   ├── useFriends.ts            # 友達一覧
-│   ├── useSubscription.ts       # 課金状態
-│   └── useMessageLimit.ts       # メッセージ制限
-├── store/
-│   ├── index.ts                 # Zustand store
-│   ├── authStore.ts             # 認証状態
-│   ├── chatStore.ts             # チャット状態
-│   └── uiStore.ts               # UI状態
-├── types/
-│   ├── user.ts
-│   ├── message.ts
-│   ├── conversation.ts
-│   ├── friendship.ts
-│   └── subscription.ts
-├── constants/
-│   ├── config.ts                # 設定値
-│   └── theme.ts                 # テーマ
-├── utils/
-│   ├── date.ts                  # 日付ユーティリティ
-│   ├── validation.ts            # バリデーション
-│   └── format.ts                # フォーマット
-└── styles/
-    ├── globals.css              # グローバルスタイル
-    └── variables.css            # CSS変数
-```
-
-### 4.3 Cloud Functions
+### 4.2 Cloud Functions
 
 ```
 functions/
@@ -615,18 +539,51 @@ functions/
     ▼
 [スプラッシュ画面]
     │
+    ├─ 初回起動 ──→ [オンボーディング（4スライド）]
+    │                      │
+    │                      ▼
     ├─ 未ログイン ──→ [ログイン画面] ←→ [新規登録画面]
     │                      │
     │                      ▼
-    │              [パスワード入力]
-    │                      │
-    │         ┌────────────┴────────────┐
-    │         ▼                         ▼
-    │   [ダミーPW]                 [本命PW]
-    │         │                         │
-    │         ▼                         ▼
-    └──→ [ダミーホーム]            [Safari起動]
-              │                    (Webアプリへ)
+    └──→ [ダミーホーム（ヘルスケア偽装）]
+              │
+              ├─ ヘッダーメニュー
+              │         │
+              │         ▼
+              │   [パスワード入力（1回目）]
+              │         │
+              │         ├─ ダミーPW → [設定画面]
+              │         │                 │
+              │         └─ 本命PW → [設定画面]
+              │                           │
+              │                           ▼
+              │                    メッセージボタン
+              │                           │
+              │                           ▼
+              │                    [パスワード入力（2回目）]
+              │                           │
+              │         ┌─────────────────┼─────────────────┐
+              │         ▼                 ▼                 ▼
+              │   [両方本命]        [両方ダミー]      [本命→ダミー]
+              │         │                 │                 │
+              │         ▼                 ▼                 ▼
+              │   [本物トーク一覧]  [ダミートーク一覧]  [全削除実行]
+              │         │                                   │
+              │         ├──→ [トークルーム]                 │
+              │         │         │                         │
+              │         │         ├─ メッセージ送信         │
+              │         │         ├─ 画像/動画送信          │
+              │         │         └─ 削除/取消             │
+              │         │                                   │
+              │         ├──→ [友達一覧]                     │
+              │         │         │                         │
+              │         │         ├─ [友達追加]             │
+              │         │         └─ [友達申請一覧]         │
+              │         │                                   │
+              │         ├──→ [プロフィール編集]             │
+              │         │                                   │
+              │         └──→ [課金管理] ←───────────────────┘
+              │
               ▼
          [ダミー統計]
               │
@@ -634,37 +591,7 @@ functions/
          [ダミー設定]
 ```
 
-### 5.2 Webアプリ画面フロー
-
-```
-[URLアクセス]
-    │
-    ├─ 未ログイン ──→ [ログイン画面] ←→ [新規登録画面]
-    │                      │
-    │                      ▼
-    └──→ [トーク一覧] ←─────────────────────┐
-              │                              │
-              ├──→ [トークルーム]            │
-              │         │                    │
-              │         ├─ メッセージ送信    │
-              │         ├─ 画像/動画送信     │
-              │         └─ 削除/取消        │
-              │                              │
-              ├──→ [友達一覧] ───────────────┤
-              │         │                    │
-              │         ├─ [友達追加]        │
-              │         └─ [友達申請一覧]    │
-              │                              │
-              ├──→ [プロフィール編集]        │
-              │                              │
-              └──→ [設定] ──────────────────┘
-                      │
-                      ├─ [課金管理]
-                      ├─ [アカウント削除]
-                      └─ [緊急削除(パニック)]
-```
-
-### 5.3 画面詳細仕様
+### 5.2 画面詳細仕様
 
 #### ログイン画面（iOS/Web共通）
 
@@ -847,36 +774,6 @@ export const useScreenshotPrevention = () => {
     };
   }, []);
 };
-```
-
-#### Web実装（ベストエフォート）
-
-```css
-/* CSS: 選択・コピー防止 */
-.message-content {
-  user-select: none;
-  -webkit-user-select: none;
-}
-```
-
-```typescript
-// JavaScript: 右クリック・キーボードショートカット防止
-useEffect(() => {
-  const handleContextMenu = (e: Event) => e.preventDefault();
-  const handleKeyDown = (e: KeyboardEvent) => {
-    if ((e.ctrlKey || e.metaKey) && (e.key === 'p' || e.key === 's')) {
-      e.preventDefault();
-    }
-  };
-
-  document.addEventListener('contextmenu', handleContextMenu);
-  document.addEventListener('keydown', handleKeyDown);
-
-  return () => {
-    document.removeEventListener('contextmenu', handleContextMenu);
-    document.removeEventListener('keydown', handleKeyDown);
-  };
-}, []);
 ```
 
 ---
@@ -1107,7 +1004,7 @@ export const ErrorMessages: Record<string, string> = {
 |------|------|--------|
 | ユニットテスト | ユーティリティ関数、フック | Jest, React Testing Library |
 | 統合テスト | コンポーネント、サービス | Jest, React Testing Library |
-| E2Eテスト | 画面遷移、ユーザーフロー | Detox (iOS), Playwright (Web) |
+| E2Eテスト | 画面遷移、ユーザーフロー | Detox (iOS) |
 | セキュリティテスト | Security Rules | Firebase Emulator |
 
 ### 10.2 テストカバレッジ目標

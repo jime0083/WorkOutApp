@@ -115,12 +115,12 @@ export async function sendNewMessageNotification(
     const { lang } = await getUserNotificationInfo(receiverId);
 
     // 偽装通知: 「アップデートしてください」
-    // 実際のアプリでは、ダミーアプリとして通知を偽装
-    const disguisedTitle = lang === 'en' ? 'App Update' : 'アプリの更新';
+    // Health Manager アプリとして通知を偽装
+    const disguisedTitle = 'Health Manager';
     const disguisedBody =
       lang === 'en'
         ? 'Please update to the latest version.'
-        : '最新バージョンにアップデートしてください。';
+        : 'アップデートしてください';
 
     return await sendPushNotification(receiverId, {
       type: 'new_message',

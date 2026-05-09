@@ -4,6 +4,7 @@
 
 // ルートスタックの画面パラメータ
 export type RootStackParamList = {
+  Onboarding: undefined;
   Auth: undefined;
   Main: undefined;
 };
@@ -18,11 +19,19 @@ export type AuthStackParamList = {
 export type DummyTabParamList = {
   Home: undefined;
   Stats: undefined;
-  Settings: undefined;
+  DummySettings: undefined;
 };
 
-// 本命メインスタックの画面パラメータ（将来用）
+// メインスタックの画面パラメータ（ダミータブ + 認証が必要な画面）
 export type MainStackParamList = {
+  DummyTabs: undefined;
+  PasswordPrompt: {
+    purpose: 'settings' | 'messages';
+  };
+  Settings: undefined;
+  Messages: undefined;
+  DummyMessages: undefined;
+  Conversation: { conversationId: string; friendId: string };
   Conversations: undefined;
   ChatRoom: { conversationId: string };
   Friends: undefined;

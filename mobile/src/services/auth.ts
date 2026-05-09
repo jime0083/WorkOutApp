@@ -147,24 +147,103 @@ export async function getUserDocument(userId: string): Promise<User | null> {
 }
 
 /**
- * Firebase ID トークンを取得
- * Webアプリへの認証情報引き渡しに使用
+ * 認証情報を検証（サインインせずに認証タイプを判定）
+ * 既にログイン中のユーザーの本物/ダミー認証情報を検証
  */
-export async function getIdToken(): Promise<string | null> {
-  const user = auth().currentUser;
-  if (!user) {
-    return null;
-  }
-  return user.getIdToken();
+export interface VerifyResult {
+  success: boolean;
+  authType: 'real' | 'dummy' | null;
+  error?: string;
 }
 
-/**
- * 本命ログイン後の処理
- * Webアプリを外部ブラウザで開く
- */
-export async function handleRealLogin(userId: string): Promise<string | null> {
-  const idToken = await getIdToken();
-  return idToken;
+export async function verifyUserCredentials(
+  email: string,
+  password: string
+): Promise<VerifyResult> {
+  const currentUser = auth().currentUser;
+  if (!currentUser) {
+    return {
+      success: false,
+      authType: null,
+      error: 'Not logged in',
+    };
+  }
+
+  try {
+    // 現在のユーザーのドキュメントを取得
+    const userDoc = await firestore()
+      .collection('users')
+      .doc(currentUser.uid)
+      .get();
+
+    if (!userDoc.exists) {
+      return {
+        success: false,
+        authType: null,
+        error: 'User document not found',
+      };
+    }
+
+    const userData = userDoc.data() as User;
+
+    // 本物のメールアドレスで認証を試行
+    if (email === userData.realEmail || email === currentUser.email) {
+      try {
+        const credential = auth.EmailAuthProvider.credential(email, password);
+        await currentUser.reauthenticateWithCredential(credential);
+        return {
+          success: true,
+          authType: 'real',
+        };
+      } catch {
+        // 本物の認証に失敗
+      }
+    }
+
+    // ダミーのメールアドレスで認証を試行
+    if (email === userData.dummyEmail) {
+      // ダミーパスワードをチェック（userDataにdummyPasswordHashがある場合）
+      // 注意: セキュアな実装ではCloud Functionsでパスワード検証を行う
+      // 簡易実装として、ダミーメールが一致すればダミー認証とする
+      // 実際のパスワード検証はCloud Functionsで行う必要がある
+      try {
+        // ダミーアカウントでサインインを試行
+        const dummyCredential = await auth().signInWithEmailAndPassword(
+          email,
+          password
+        );
+        // 同じユーザーであることを確認
+        if (dummyCredential.user.uid === currentUser.uid) {
+          return {
+            success: true,
+            authType: 'dummy',
+          };
+        }
+        // 異なるユーザーだった場合はサインアウト
+        await auth().signOut();
+        // 元のユーザーで再サインイン（できない場合はエラー）
+        return {
+          success: false,
+          authType: null,
+          error: 'Invalid credentials',
+        };
+      } catch {
+        // ダミー認証に失敗
+      }
+    }
+
+    return {
+      success: false,
+      authType: null,
+      error: 'Invalid email or password',
+    };
+  } catch (error) {
+    return {
+      success: false,
+      authType: null,
+      error: error instanceof Error ? error.message : 'Verification failed',
+    };
+  }
 }
 
 export { auth };
