@@ -1,23 +1,23 @@
 /**
  * サブスクリプションサービス（React Native / StoreKit 2）
- * react-native-iap を使用した In-App Purchase 処理
+ * react-native-iap v15 を使用した In-App Purchase 処理
  */
 import {
   initConnection,
   endConnection,
-  getProducts,
+  fetchProducts,
   requestPurchase,
   getAvailablePurchases,
   finishTransaction,
   purchaseUpdatedListener,
   purchaseErrorListener,
-  type Product,
+  getReceiptIOS,
   type Purchase,
   type PurchaseError,
-  type SubscriptionPurchase,
 } from 'react-native-iap';
-import functions from '@react-native-firebase/functions';
-import firestore from '@react-native-firebase/firestore';
+import { httpsCallable } from 'firebase/functions';
+import { doc, getDoc, onSnapshot } from 'firebase/firestore';
+import { getFunctionsInstance, getFirestoreInstance } from './firebase';
 import type { PlanType } from '../types/subscription';
 
 // 商品ID
@@ -28,11 +28,6 @@ export const PRODUCT_IDS = {
 
 // 全商品ID配列
 const ALL_PRODUCT_IDS = [PRODUCT_IDS.monthly, PRODUCT_IDS.yearly];
-
-// Cloud Functions インスタンス（asia-northeast1リージョン）
-const functionsInstance = functions().useFunctionsEmulator
-  ? functions()
-  : functions('asia-northeast1');
 
 // 購入結果型
 export interface PurchaseResult {
@@ -118,17 +113,21 @@ export function setupPurchaseListeners(
 /**
  * 商品情報を取得
  */
-export async function fetchProducts(): Promise<ProductInfo[]> {
+export async function getSubscriptionProducts(): Promise<ProductInfo[]> {
   try {
-    const products = await getProducts({ skus: ALL_PRODUCT_IDS });
+    const products = await fetchProducts({ skus: ALL_PRODUCT_IDS, type: 'subs' });
 
-    return products.map((product: Product) => ({
-      productId: product.productId,
+    if (!products || products.length === 0) {
+      return [];
+    }
+
+    return products.map((product) => ({
+      productId: product.id,
       title: product.title,
       description: product.description,
-      price: product.localizedPrice,
+      price: product.displayPrice,
       currency: product.currency,
-      planType: product.productId === PRODUCT_IDS.monthly ? 'monthly' : 'yearly',
+      planType: (product.id === PRODUCT_IDS.monthly ? 'monthly' : 'yearly') as 'monthly' | 'yearly',
     }));
   } catch (error) {
     console.error('Failed to fetch products:', error);
@@ -139,9 +138,14 @@ export async function fetchProducts(): Promise<ProductInfo[]> {
 /**
  * 商品を購入
  */
-export async function purchaseProduct(productId: string): Promise<void> {
+export async function purchaseSubscription(productId: string): Promise<void> {
   try {
-    await requestPurchase({ sku: productId });
+    await requestPurchase({
+      request: {
+        apple: { sku: productId },
+      },
+      type: 'subs',
+    });
     // 購入結果は purchaseUpdatedListener で受け取る
   } catch (error) {
     console.error('Failed to initiate purchase:', error);
@@ -157,13 +161,17 @@ export async function verifyReceipt(
   lang?: string
 ): Promise<PurchaseResult> {
   try {
-    const verifyAppleReceipt = functionsInstance.httpsCallable('verifyAppleReceipt');
+    const functions = getFunctionsInstance();
+    const verifyAppleReceipt = httpsCallable<
+      { receiptData: string; lang?: string },
+      PurchaseResult
+    >(functions, 'verifyAppleReceipt');
     const result = await verifyAppleReceipt({
       receiptData,
       lang,
     });
 
-    return result.data as PurchaseResult;
+    return result.data;
   } catch (error) {
     console.error('Failed to verify receipt:', error);
     return {
@@ -178,7 +186,10 @@ export async function verifyReceipt(
  */
 export async function completePurchase(purchase: Purchase): Promise<void> {
   try {
-    await finishTransaction({ purchase, isConsumable: false });
+    await finishTransaction({
+      purchase,
+      isConsumable: false,
+    });
   } catch (error) {
     console.error('Failed to finish transaction:', error);
     throw error;
@@ -193,8 +204,8 @@ export async function processPurchase(
   lang?: string
 ): Promise<PurchaseResult> {
   try {
-    // レシートデータを取得
-    const receiptData = purchase.transactionReceipt;
+    // iOSレシートデータを取得
+    const receiptData = await getReceiptIOS();
     if (!receiptData) {
       return {
         success: false,
@@ -234,14 +245,9 @@ export async function restorePurchases(lang?: string): Promise<PurchaseResult> {
       };
     }
 
-    // 最新の購入を取得
-    const latestPurchase = purchases.sort((a, b) => {
-      const dateA = a.transactionDate ? new Date(a.transactionDate).getTime() : 0;
-      const dateB = b.transactionDate ? new Date(b.transactionDate).getTime() : 0;
-      return dateB - dateA;
-    })[0];
-
-    if (!latestPurchase?.transactionReceipt) {
+    // iOSレシートを取得して検証
+    const receiptData = await getReceiptIOS();
+    if (!receiptData) {
       return {
         success: true,
         subscriptionStatus: 'free',
@@ -249,7 +255,7 @@ export async function restorePurchases(lang?: string): Promise<PurchaseResult> {
     }
 
     // レシートを検証
-    return await verifyReceipt(latestPurchase.transactionReceipt, lang);
+    return await verifyReceipt(receiptData, lang);
   } catch (error) {
     console.error('Failed to restore purchases:', error);
     return {
@@ -270,9 +276,10 @@ export async function getSubscriptionStatus(
   expiryDate: Date | null;
 }> {
   try {
-    const userDoc = await firestore().collection('users').doc(userId).get();
+    const db = getFirestoreInstance();
+    const userDoc = await getDoc(doc(db, 'users', userId));
 
-    if (!userDoc.exists) {
+    if (!userDoc.exists()) {
       return {
         isPremium: false,
         planType: null,
@@ -307,24 +314,22 @@ export function subscribeToSubscriptionStatus(
     expiryDate: Date | null;
   }) => void
 ): () => void {
-  return firestore()
-    .collection('users')
-    .doc(userId)
-    .onSnapshot((snapshot) => {
-      if (!snapshot.exists) {
-        callback({
-          isPremium: false,
-          planType: null,
-          expiryDate: null,
-        });
-        return;
-      }
-
-      const userData = snapshot.data();
+  const db = getFirestoreInstance();
+  return onSnapshot(doc(db, 'users', userId), (snapshot) => {
+    if (!snapshot.exists()) {
       callback({
-        isPremium: userData?.subscriptionStatus === 'premium',
-        planType: userData?.subscriptionPlan || null,
-        expiryDate: userData?.subscriptionExpiry?.toDate() || null,
+        isPremium: false,
+        planType: null,
+        expiryDate: null,
       });
+      return;
+    }
+
+    const userData = snapshot.data();
+    callback({
+      isPremium: userData?.subscriptionStatus === 'premium',
+      planType: userData?.subscriptionPlan || null,
+      expiryDate: userData?.subscriptionExpiry?.toDate() || null,
     });
+  });
 }

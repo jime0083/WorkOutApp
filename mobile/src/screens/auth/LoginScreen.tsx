@@ -13,14 +13,20 @@ import {
   Alert,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Button, Input } from '../../components';
 import { useAuthStore } from '../../stores/authStore';
 import { colors, spacing, typography } from '../../theme';
+import type { AuthStackParamList, RootStackParamList } from '../../navigation/types';
 import '../../i18n';
 
-interface LoginScreenProps {
-  onNavigateToRegister: () => void;
-  onLoginSuccess: (isDummyMode: boolean) => void;
+type NavigationProp = NativeStackNavigationProp<AuthStackParamList & RootStackParamList>;
+
+// 後方互換性のためのPropsインターフェース（オプショナル）
+export interface LoginScreenProps {
+  onNavigateToRegister?: () => void;
+  onLoginSuccess?: (isDummyMode: boolean) => void;
 }
 
 export const LoginScreen: React.FC<LoginScreenProps> = ({
@@ -28,6 +34,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
   onLoginSuccess,
 }) => {
   const { t } = useTranslation();
+  const navigation = useNavigation<NavigationProp>();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [emailError, setEmailError] = useState('');
@@ -66,9 +73,22 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
     const result = await login(email, password);
 
     if (result.success) {
-      onLoginSuccess(result.isDummyLogin);
+      if (onLoginSuccess) {
+        onLoginSuccess(result.isDummyLogin);
+      } else {
+        // デフォルトのナビゲーション動作
+        // 認証成功後はRootNavigatorが自動的にDummyTabsに遷移する
+      }
     } else {
       Alert.alert(t('auth.registerFailed'), result.error || t('common.error'));
+    }
+  };
+
+  const handleNavigateToRegister = () => {
+    if (onNavigateToRegister) {
+      onNavigateToRegister();
+    } else {
+      navigation.navigate('Register');
     }
   };
 
@@ -118,7 +138,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
           />
 
           <TouchableOpacity
-            onPress={onNavigateToRegister}
+            onPress={handleNavigateToRegister}
             style={styles.registerLink}
           >
             <Text style={styles.registerLinkText}>
@@ -140,45 +160,46 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     justifyContent: 'center',
-    padding: spacing.xl,
+    padding: spacing.lg,
   },
   header: {
     alignItems: 'center',
-    marginBottom: spacing['3xl'],
+    marginBottom: spacing.xl,
   },
   title: {
-    fontSize: typography.fontSize['4xl'],
-    fontWeight: typography.fontWeight.bold,
+    fontSize: typography.sizes['3xl'],
+    fontWeight: typography.weights.bold as '700',
     color: colors.primary,
-    marginBottom: spacing.xs,
+    marginBottom: spacing.sm,
   },
   subtitle: {
-    fontSize: typography.fontSize.md,
-    color: colors.textSecondary,
+    fontSize: typography.sizes.md,
+    color: colors.text.secondary,
+    textAlign: 'center',
   },
   form: {
     width: '100%',
   },
-  errorText: {
-    color: colors.error,
-    fontSize: typography.fontSize.sm,
-    textAlign: 'center',
-    marginBottom: spacing.md,
-  },
   loginButton: {
     marginTop: spacing.lg,
   },
+  errorText: {
+    color: colors.error,
+    fontSize: typography.sizes.sm,
+    marginTop: spacing.sm,
+    textAlign: 'center',
+  },
   registerLink: {
-    marginTop: spacing.xl,
+    marginTop: spacing.lg,
     alignItems: 'center',
   },
   registerLinkText: {
-    fontSize: typography.fontSize.sm,
-    color: colors.textSecondary,
+    fontSize: typography.sizes.md,
+    color: colors.text.secondary,
   },
   registerLinkTextBold: {
     color: colors.primary,
-    fontWeight: typography.fontWeight.semibold,
+    fontWeight: typography.weights.semibold as '600',
   },
 });
 

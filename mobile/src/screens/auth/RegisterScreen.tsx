@@ -13,20 +13,27 @@ import {
   Alert,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Button, Input, Card } from '../../components';
 import { registerUser } from '../../services/auth';
 import { colors, spacing, typography } from '../../theme';
+import type { AuthStackParamList } from '../../navigation/types';
 import '../../i18n';
 
-interface RegisterScreenProps {
-  onNavigateToLogin: () => void;
-  onRegisterSuccess: () => void;
+type NavigationProp = NativeStackNavigationProp<AuthStackParamList>;
+
+// 後方互換性のためのPropsインターフェース（オプショナル）
+export interface RegisterScreenProps {
+  onNavigateToLogin?: () => void;
+  onRegisterSuccess?: () => void;
 }
 
 export const RegisterScreen: React.FC<RegisterScreenProps> = ({
   onNavigateToLogin,
   onRegisterSuccess,
 }) => {
+  const navigation = useNavigation<NavigationProp>();
   const { t } = useTranslation();
 
   // 本命アカウント情報
@@ -106,10 +113,17 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
       });
 
       if (result.success) {
+        const handleSuccess = () => {
+          if (onRegisterSuccess) {
+            onRegisterSuccess();
+          } else {
+            navigation.navigate('Login');
+          }
+        };
         Alert.alert(
           t('common.success'),
           t('auth.accountCreated'),
-          [{ text: 'OK', onPress: onRegisterSuccess }]
+          [{ text: 'OK', onPress: handleSuccess }]
         );
       } else {
         Alert.alert(t('auth.registerFailed'), result.error || t('common.error'));
@@ -220,7 +234,13 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
         />
 
         <TouchableOpacity
-          onPress={onNavigateToLogin}
+          onPress={() => {
+            if (onNavigateToLogin) {
+              onNavigateToLogin();
+            } else {
+              navigation.navigate('Login');
+            }
+          }}
           style={styles.loginLink}
         >
           <Text style={styles.loginLinkText}>

@@ -14,7 +14,15 @@
       "Bash(firebase hosting:sites:list:*)",
       "Bash(ls:*)",
       "Bash(chmod:*)",
-      "Bash(sips:*)"
+      "Bash(sips:*)",
+      "Bash(xcodebuild:*)",
+      "Bash(pod install:*)",
+      "Bash(npm uninstall:*)",
+      "Bash(npm view:*)",
+      "Bash(find:*)",
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "Bash(grep:*)"
     ]
   }
 }

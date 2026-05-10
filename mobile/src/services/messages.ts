@@ -2,7 +2,8 @@
  * メッセージサービス
  * メッセージ関連の操作
  */
-import functions from '@react-native-firebase/functions';
+import { httpsCallable } from 'firebase/functions';
+import { getFunctionsInstance } from './firebase';
 import i18n from '../i18n';
 
 interface DeleteAllMessagesResult {
@@ -21,11 +22,15 @@ interface DeleteAllMessagesResult {
  */
 export async function deleteAllMessages(): Promise<DeleteAllMessagesResult> {
   try {
-    const deleteAllMessagesFunc = functions().httpsCallable('deleteAllMessages');
+    const functions = getFunctionsInstance();
+    const deleteAllMessagesFunc = httpsCallable<{ lang: string }, DeleteAllMessagesResult>(
+      functions,
+      'deleteAllMessages'
+    );
     const result = await deleteAllMessagesFunc({
       lang: i18n.language,
     });
-    return result.data as DeleteAllMessagesResult;
+    return result.data;
   } catch (error) {
     console.error('Failed to delete all messages:', error);
     return {
@@ -40,12 +45,16 @@ export async function deleteAllMessages(): Promise<DeleteAllMessagesResult> {
  */
 export async function panicDelete(confirmationCode: string): Promise<DeleteAllMessagesResult> {
   try {
-    const panicDeleteFunc = functions().httpsCallable('panicDelete');
+    const functions = getFunctionsInstance();
+    const panicDeleteFunc = httpsCallable<{ confirmationCode: string; lang: string }, DeleteAllMessagesResult>(
+      functions,
+      'panicDelete'
+    );
     const result = await panicDeleteFunc({
       confirmationCode,
       lang: i18n.language,
     });
-    return result.data as DeleteAllMessagesResult;
+    return result.data;
   } catch (error) {
     console.error('Failed to panic delete:', error);
     return {

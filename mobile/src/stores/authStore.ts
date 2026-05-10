@@ -2,7 +2,7 @@
  * 認証状態管理ストア
  */
 import { create } from 'zustand';
-import { FirebaseAuthTypes } from '@react-native-firebase/auth';
+import { User as FirebaseUser } from 'firebase/auth';
 import {
   loginWithEmail,
   logout as authLogout,
@@ -14,7 +14,7 @@ import type { User } from '../types/user';
 
 interface AuthState {
   // 状態
-  user: FirebaseAuthTypes.User | null;
+  user: FirebaseUser | null;
   userDocument: User | null;
   isLoading: boolean;
   isInitialized: boolean;

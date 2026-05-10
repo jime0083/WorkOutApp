@@ -19,10 +19,25 @@ import { useTranslation } from 'react-i18next';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
-import firestore from '@react-native-firebase/firestore';
+import {
+  collection,
+  doc,
+  getDoc,
+  addDoc,
+  updateDoc,
+  query,
+  where,
+  orderBy,
+  limit,
+  onSnapshot,
+  serverTimestamp,
+  Timestamp,
+} from 'firebase/firestore';
+import { getFirestoreInstance } from '../../services/firebase';
 import { colors, typography, spacing } from '../../theme';
 import { useAuthStore } from '../../stores/authStore';
 import type { MainStackParamList } from '../../navigation/types';
+import { isPremiumUser } from '../../types/user';
 import '../../i18n';
 
 type NavigationProp = NativeStackNavigationProp<MainStackParamList>;
@@ -52,16 +67,14 @@ export const ConversationScreen: React.FC = () => {
   const [messageCount, setMessageCount] = useState(0);
   const flatListRef = useRef<FlatList>(null);
 
-  const isPremium = userDocument?.isPremium ?? false;
+  const isPremium = isPremiumUser(userDocument);
 
   useEffect(() => {
     // 友達の名前を取得
     const fetchFriendName = async () => {
-      const friendDoc = await firestore()
-        .collection('users')
-        .doc(friendId)
-        .get();
-      if (friendDoc.exists === true) {
+      const db = getFirestoreInstance();
+      const friendDoc = await getDoc(doc(db, 'users', friendId));
+      if (friendDoc.exists()) {
         const data = friendDoc.data();
         setFriendName(data?.nickname || data?.displayName || t('chat.unknownUser'));
       }
@@ -73,41 +86,45 @@ export const ConversationScreen: React.FC = () => {
     // 今月のメッセージ数を取得
     if (!user) return;
 
+    const db = getFirestoreInstance();
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-    const unsubscribe = firestore()
-      .collection('messages')
-      .where('senderId', '==', user.uid)
-      .where('createdAt', '>=', startOfMonth)
-      .onSnapshot((snapshot) => {
-        setMessageCount(snapshot.size);
-      });
+    const q = query(
+      collection(db, 'messages'),
+      where('senderId', '==', user.uid),
+      where('createdAt', '>=', Timestamp.fromDate(startOfMonth))
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setMessageCount(snapshot.size);
+    });
 
     return () => unsubscribe();
   }, [user]);
 
   useEffect(() => {
     // メッセージを取得
-    const unsubscribe = firestore()
-      .collection('conversations')
-      .doc(conversationId)
-      .collection('messages')
-      .orderBy('createdAt', 'desc')
-      .limit(50)
-      .onSnapshot((snapshot) => {
-        const msgs: Message[] = snapshot.docs.map((doc) => {
-          const data = doc.data();
-          return {
-            id: doc.id,
-            senderId: data.senderId,
-            text: data.text,
-            createdAt: data.createdAt?.toDate() || new Date(),
-            isDeleted: data.isDeleted || false,
-          };
-        });
-        setMessages(msgs.reverse());
+    const db = getFirestoreInstance();
+    const q = query(
+      collection(db, 'conversations', conversationId, 'messages'),
+      orderBy('createdAt', 'desc'),
+      limit(50)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const msgs: Message[] = snapshot.docs.map((docSnap) => {
+        const data = docSnap.data();
+        return {
+          id: docSnap.id,
+          senderId: data.senderId,
+          text: data.text,
+          createdAt: data.createdAt?.toDate() || new Date(),
+          isDeleted: data.isDeleted || false,
+        };
       });
+      setMessages(msgs.reverse());
+    });
 
     return () => unsubscribe();
   }, [conversationId]);
@@ -140,26 +157,21 @@ export const ConversationScreen: React.FC = () => {
     setInputText('');
 
     try {
+      const db = getFirestoreInstance();
+
       // メッセージを追加
-      await firestore()
-        .collection('conversations')
-        .doc(conversationId)
-        .collection('messages')
-        .add({
-          senderId: user.uid,
-          text: messageText,
-          createdAt: firestore.FieldValue.serverTimestamp(),
-          isDeleted: false,
-        });
+      await addDoc(collection(db, 'conversations', conversationId, 'messages'), {
+        senderId: user.uid,
+        text: messageText,
+        createdAt: serverTimestamp(),
+        isDeleted: false,
+      });
 
       // 会話の最終メッセージを更新
-      await firestore()
-        .collection('conversations')
-        .doc(conversationId)
-        .update({
-          lastMessage: messageText,
-          lastMessageAt: firestore.FieldValue.serverTimestamp(),
-        });
+      await updateDoc(doc(db, 'conversations', conversationId), {
+        lastMessage: messageText,
+        lastMessageAt: serverTimestamp(),
+      });
     } catch (error) {
       console.error('Error sending message:', error);
       Alert.alert(t('common.error'));

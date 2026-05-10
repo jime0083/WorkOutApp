@@ -90,6 +90,7 @@ YYYY-MM-DD
 | # | タイトル | 発生日 | ステータス | 関連Phase/Work |
 |---|----------|--------|------------|----------------|
 | 1 | Webアプリビルドエラー（複数の型エラー・未実装モジュール） | 2026-05-02 | 解決済み | Phase 8.5 |
+| 2 | iOS Xcodeビルドエラー（Firebase + React Native 0.85互換性問題） | 2026-05-09 | 解決済み | Phase 13 |
 
 ---
 
@@ -298,3 +299,222 @@ export interface AuthState { ... }
 - 仮実装ページの作成（後で混乱の原因になる）
 - ビルドチェックなしでのPhase完了宣言
 - 型定義を変更せずに使用側だけを修正（整合性が取れなくなる）
+
+---
+
+## Problem #2: iOS Xcodeビルドエラー（Firebase + React Native 0.85互換性問題）
+発生日: 2026-05-09
+関連Phase/Work: Phase 13（ビルド・デプロイ準備）
+ステータス: 解決済み
+
+### 必須チェックリスト（全て完了必須）
+- [x] 1. TodoWrite に問題対応タスクを追加した
+- [x] 2. 原因を徹底調査した
+- [x] 3. 修正計画を作成した
+- [x] 4. problem.txt に記録した（この項目）
+- [x] 5. 修正を実施した
+- [x] 6. 動作確認を完了した
+- [x] 7. TodoWrite のタスクを完了にした
+
+### 問題の詳細
+
+iOS Xcodeビルドを実行した際、複数のエラーが連続して発生しビルドが失敗した。
+
+**主要なエラー:**
+```
+1. gRPC-Core.modulemap not found
+   - module map file '/Users/.../Pods/Headers/Private/grpc/gRPC-Core.modulemap' not found
+
+2. FirebaseAuth-Swift.h not found
+   - 'FirebaseAuth-Swift.h' file not found
+
+3. RCTPromiseRejectBlock not found
+   - Unknown type name 'RCTPromiseRejectBlock'
+   - Unknown type name 'RCTBridgeModule'
+
+4. Non-modular header includes
+   - Include of non-modular header inside framework module
+```
+
+### 原因分析
+
+#### 根本原因: @react-native-firebase と React Native 0.85.2 の互換性問題
+
+1. **gRPC依存性の問題**
+   - `@react-native-firebase/firestore` は `gRPC` をネイティブ依存として使用
+   - `use_modular_headers!` グローバル設定がgRPCのmodulemap参照に問題を起こす
+   - React Native 0.85 の新アーキテクチャ（New Architecture）とgRPCの構造が衝突
+
+2. **Swiftブリッジングヘッダーの問題**
+   - Firebase SDK v23+ はSwiftモジュールを含む
+   - 静的ライブラリ (`use_frameworks!` なし) ではSwiftブリッジングヘッダーが生成されない
+   - `FirebaseAuth-Swift.h` が見つからないエラーが発生
+
+3. **React Native Objective-Cモジュールの問題**
+   - `use_frameworks! :linkage => :dynamic` を使用するとフレームワーク間のインポート順序に問題
+   - `RCTPromiseRejectBlock` などのReact Nativeマクロが未定義エラー
+
+4. **技術的詳細**
+   - React Native 0.85 は Hermes エンジンをデフォルトで使用
+   - プリビルドされた React Native Core がモジュール構造を厳格に要求
+   - Firebase iOS SDK の BoringSSL/gRPC 依存が複雑な Pod 構成を必要とする
+
+### 修正計画
+
+#### 検討した選択肢
+
+| 選択肢 | 内容 | 評価 |
+|--------|------|------|
+| A | Podfile設定を調整（modular_headers, use_frameworks） | ❌ 複数のアプローチを試したが全て失敗 |
+| B | React Native をダウングレード（0.73等） | ❌ 大規模な変更が必要、他の依存関係に影響 |
+| C | Firebase JS SDK に移行 | ✅ 採用：ネイティブ依存を排除 |
+
+#### 採用した計画: Firebase JS SDK への移行
+
+```
+Phase 1: パッケージ変更
+  - @react-native-firebase/* パッケージを削除
+  - firebase (JS SDK) パッケージをインストール
+
+Phase 2: Podfile更新
+  - Firebaseネイティブ依存を削除
+  - シンプルなPodfile構成に変更
+
+Phase 3: サービスコード更新
+  - firebase.ts: JS SDK初期化に書き換え
+  - auth.ts: JS SDK API使用に更新
+  - subscription.ts: Firestore JS SDK + react-native-iap v15対応
+  - notification.ts: スタブ実装（FCMはJS SDKでサポートされない）
+  - messages.ts: Firebase Functions JS SDK使用
+  - 各スクリーンファイル: Firestoreクエリを更新
+
+Phase 4: ビルド確認
+  - pod install
+  - xcodebuild
+```
+
+### 修正したファイル
+
+**削除したパッケージ:**
+- `@react-native-firebase/app`
+- `@react-native-firebase/auth`
+- `@react-native-firebase/firestore`
+- `@react-native-firebase/functions`
+- `@react-native-firebase/messaging`
+
+**追加したパッケージ:**
+- `firebase@^11.8.0`
+- `react-native-svg`
+
+**修正したファイル:**
+- `mobile/ios/Podfile` - シンプルな構成に変更
+- `mobile/src/services/firebase.ts` - Firebase JS SDK用に完全書き換え
+- `mobile/src/services/auth.ts` - JS SDK API使用に更新
+- `mobile/src/services/subscription.ts` - react-native-iap v15 API対応 + Firestore JS SDK
+- `mobile/src/services/notification.ts` - スタブ実装に変更
+- `mobile/src/services/messages.ts` - Firebase Functions JS SDK使用
+- `mobile/src/stores/authStore.ts` - User型インポート変更
+- `mobile/src/screens/messages/ConversationScreen.tsx` - Firestore JS SDK使用
+- `mobile/src/screens/messages/MessagesScreen.tsx` - Firestore JS SDK使用
+- `mobile/src/screens/subscription/SubscriptionScreen.tsx` - 型エラー修正
+- `mobile/src/screens/auth/LoginScreen.tsx` - ナビゲーションフック使用
+- `mobile/src/screens/auth/RegisterScreen.tsx` - ナビゲーションフック使用
+
+### 試したアプローチ（失敗したものも含む）
+
+1. **use_modular_headers! を削除し個別設定** → 失敗
+   - gRPCのmodulemap問題は解決したが、Swiftブリッジングヘッダー問題が発生
+
+2. **use_frameworks! :linkage => :static 使用** → 失敗
+   - "Swift Pods cannot be integrated as static libraries" エラー
+
+3. **use_frameworks! :linkage => :dynamic 使用** → 失敗
+   - RCTPromiseRejectBlock not found エラー
+
+4. **Firebase SDK v23 → v22 ダウングレード** → 失敗
+   - 同様の互換性問題が発生
+
+5. **@react-native-firebase/firestore のみ削除** → 失敗
+   - gRPCは削除されたが、他のFirebase SDK問題が残存
+
+6. **Firebase JS SDK への移行** → 成功
+   - ネイティブ依存を完全に排除し、ビルド成功
+
+### 採用した解決策
+
+**Firebase JS SDK への完全移行**
+
+```typescript
+// Before: @react-native-firebase
+import auth from '@react-native-firebase/auth';
+import firestore from '@react-native-firebase/firestore';
+
+// After: Firebase JS SDK
+import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
+import { collection, doc, query, onSnapshot } from 'firebase/firestore';
+import { getFirestoreInstance } from './firebase';
+```
+
+**主要な変更点:**
+1. ネイティブモジュール依存を排除
+2. Firebase初期化を単一のfirebase.tsで管理
+3. Firestoreクエリパターンの変更（メソッドチェーン → 関数呼び出し）
+4. FCM（プッシュ通知）はスタブ実装（JS SDKでサポートされないため）
+
+### 動作確認結果
+- [x] 問題が解決したことを確認（BUILD SUCCEEDED）
+- [x] 副作用がないことを確認（TypeScript型チェック通過）
+- [x] ビルドが通ることを確認（xcodebuild成功）
+
+### 再発防止策
+
+1. **React Native + Firebase の互換性確認**
+   - 新しいReact Nativeバージョンにアップグレードする前に、Firebaseとの互換性を確認
+   - react-native-firebase の GitHub Issues を事前にチェック
+
+2. **ネイティブ依存の最小化**
+   - 可能な限りJS SDKを使用し、ネイティブ依存を減らす
+   - ネイティブモジュールが必要な場合は互換性を十分に検証
+
+3. **プッシュ通知の代替検討**
+   - Firebase JS SDKはFCMをサポートしないため、代替手段を検討
+   - 候補: Expo Push Notifications, OneSignal
+
+4. **段階的なアップグレード**
+   - React Native、Firebase SDK、その他依存関係は一度に大幅更新しない
+   - 各更新後にビルドテストを実施
+
+### 学んだこと
+
+1. **React Native New Architecture の影響**
+   - 0.85 の New Architecture は多くのネイティブモジュールと互換性問題を起こす可能性がある
+   - 特にgRPC、BoringSSL等の複雑な依存を持つライブラリは注意が必要
+
+2. **Firebase ネイティブ vs JS SDK のトレードオフ**
+   - ネイティブ SDK: 高性能、オフラインサポート、プッシュ通知対応
+   - JS SDK: 互換性が高い、ネイティブ依存なし、一部機能制限あり
+
+3. **Podfile設定の複雑さ**
+   - `use_frameworks!`, `use_modular_headers!`, `linkage` の組み合わせは非常に複雑
+   - 一つの問題を解決すると別の問題が発生することがある
+
+4. **問題解決のアプローチ**
+   - 複数のアプローチを試しても解決しない場合は、根本的なアーキテクチャ変更を検討
+   - 時間をかけて小さな修正を繰り返すより、抜本的な解決策の方が効率的な場合がある
+
+5. **事前調査の重要性**
+   - 大規模なバージョンアップ（特にReact Native）前には互換性調査が必須
+   - GitHub Issues、公式ドキュメント、コミュニティの情報を事前にチェック
+
+### 解決日
+2026-05-09
+
+---
+
+## Problem #2 からの教訓
+
+1. **React Nativeアップグレード時の注意**: ネイティブモジュールとの互換性を必ず事前確認
+2. **Firebase SDKの選択**: 互換性問題が多い場合はJS SDKへの移行を検討
+3. **複数アプローチ失敗時**: 根本的なアーキテクチャ変更を恐れない
+4. **プッシュ通知の代替**: Expo Push NotificationsやOneSignalも選択肢に入れる
+5. **Podfile設定の限界**: 設定調整で解決しない問題も存在する

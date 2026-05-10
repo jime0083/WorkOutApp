@@ -15,7 +15,16 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import firestore from '@react-native-firebase/firestore';
+import {
+  collection,
+  doc,
+  getDoc,
+  query,
+  where,
+  orderBy,
+  onSnapshot,
+} from 'firebase/firestore';
+import { getFirestoreInstance } from '../../services/firebase';
 import { colors, typography, spacing } from '../../theme';
 import { useAuthStore } from '../../stores/authStore';
 import type { MainStackParamList } from '../../navigation/types';
@@ -44,52 +53,53 @@ export const MessagesScreen: React.FC = () => {
   useEffect(() => {
     if (!user) return;
 
-    const unsubscribe = firestore()
-      .collection('conversations')
-      .where('participantIds', 'array-contains', user.uid)
-      .orderBy('lastMessageAt', 'desc')
-      .onSnapshot(
-        async (snapshot) => {
-          const convs: Conversation[] = [];
-          for (const doc of snapshot.docs) {
-            const data = doc.data();
-            const friendId = data.participantIds.find(
-              (id: string) => id !== user.uid
-            );
+    const db = getFirestoreInstance();
+    const q = query(
+      collection(db, 'conversations'),
+      where('participantIds', 'array-contains', user.uid),
+      orderBy('lastMessageAt', 'desc')
+    );
 
-            // 友達の情報を取得
-            let friendName = t('chat.unknownUser');
-            let friendAvatar: string | undefined;
-            if (friendId != null) {
-              const friendDoc = await firestore()
-                .collection('users')
-                .doc(friendId)
-                .get();
-              if (friendDoc.exists) {
-                const friendData = friendDoc.data();
-                friendName = friendData?.nickname || friendData?.displayName || friendName;
-                friendAvatar = friendData?.avatarUrl;
-              }
+    const unsubscribe = onSnapshot(
+      q,
+      async (snapshot) => {
+        const convs: Conversation[] = [];
+        for (const docSnap of snapshot.docs) {
+          const data = docSnap.data();
+          const friendId = data.participantIds.find(
+            (id: string) => id !== user.uid
+          );
+
+          // 友達の情報を取得
+          let friendName = t('chat.unknownUser');
+          let friendAvatar: string | undefined;
+          if (friendId != null) {
+            const friendDoc = await getDoc(doc(db, 'users', friendId));
+            if (friendDoc.exists()) {
+              const friendData = friendDoc.data();
+              friendName = friendData?.nickname || friendData?.displayName || friendName;
+              friendAvatar = friendData?.avatarUrl;
             }
-
-            convs.push({
-              id: doc.id,
-              participantIds: data.participantIds,
-              lastMessage: data.lastMessage || '',
-              lastMessageAt: data.lastMessageAt?.toDate() || new Date(),
-              unreadCount: data.unreadCount?.[user.uid] || 0,
-              friendName,
-              friendAvatar,
-            });
           }
-          setConversations(convs);
-          setIsLoading(false);
-        },
-        (error) => {
-          console.error('Error fetching conversations:', error);
-          setIsLoading(false);
+
+          convs.push({
+            id: docSnap.id,
+            participantIds: data.participantIds,
+            lastMessage: data.lastMessage || '',
+            lastMessageAt: data.lastMessageAt?.toDate() || new Date(),
+            unreadCount: data.unreadCount?.[user.uid] || 0,
+            friendName,
+            friendAvatar,
+          });
         }
-      );
+        setConversations(convs);
+        setIsLoading(false);
+      },
+      (error) => {
+        console.error('Error fetching conversations:', error);
+        setIsLoading(false);
+      }
+    );
 
     return () => unsubscribe();
   }, [user, t]);

@@ -20,6 +20,7 @@ import {
   DummyMessagesScreen,
   ConversationScreen,
 } from '../screens/messages';
+import { SubscriptionScreen } from '../screens/subscription';
 
 const Stack = createNativeStackNavigator<MainStackParamList>();
 const Tab = createBottomTabNavigator<DummyTabParamList>();
@@ -83,6 +84,7 @@ const DummyTabNavigator: React.FC = () => {
 export const MainNavigator: React.FC = () => {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="Subscription" component={SubscriptionScreen} />
       <Stack.Screen name="DummyTabs" component={DummyTabNavigator} />
       <Stack.Screen
         name="PasswordPrompt"

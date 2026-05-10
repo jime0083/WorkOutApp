@@ -1,9 +1,12 @@
 /**
  * セキュリティサービス（React Native）
  * スクリーンショット防止、画面録画防止
+ *
+ * NOTE: react-native-screenshot-preventはReact Native 0.85と互換性がないため
+ * 現在は無効化されています。将来的に互換性のあるパッケージが利用可能になったら
+ * 再度有効化してください。
  */
 import { Platform, AppState, AppStateStatus } from 'react-native';
-import ScreenshotPrevent from 'react-native-screenshot-prevent';
 
 // セキュリティ設定
 interface SecurityConfig {
@@ -31,28 +34,25 @@ export function initializeSecurity(config?: Partial<SecurityConfig>): void {
 
   currentConfig = { ...defaultConfig, ...config };
 
-  if (Platform.OS === 'ios') {
-    // iOSでのスクリーンショット防止
-    if (currentConfig.preventScreenshot) {
-      enableScreenshotPrevention();
-    }
-  }
+  // TODO: react-native-screenshot-preventが React Native 0.85に対応したら有効化
+  // if (Platform.OS === 'ios') {
+  //   if (currentConfig.preventScreenshot) {
+  //     enableScreenshotPrevention();
+  //   }
+  // }
 
   isInitialized = true;
-  console.log('Security service initialized');
+  console.log('Security service initialized (screenshot prevention disabled due to RN 0.85 compatibility)');
 }
 
 /**
  * スクリーンショット防止を有効化
+ * NOTE: 現在は無効化されています
  */
 export function enableScreenshotPrevention(): void {
   if (Platform.OS === 'ios') {
-    try {
-      ScreenshotPrevent.enableSecureView();
-      console.log('Screenshot prevention enabled');
-    } catch (error) {
-      console.error('Failed to enable screenshot prevention:', error);
-    }
+    // TODO: react-native-screenshot-preventが利用可能になったら有効化
+    console.log('Screenshot prevention is currently disabled (RN 0.85 compatibility)');
   }
 }
 
@@ -61,12 +61,8 @@ export function enableScreenshotPrevention(): void {
  */
 export function disableScreenshotPrevention(): void {
   if (Platform.OS === 'ios') {
-    try {
-      ScreenshotPrevent.disableSecureView();
-      console.log('Screenshot prevention disabled');
-    } catch (error) {
-      console.error('Failed to disable screenshot prevention:', error);
-    }
+    // TODO: react-native-screenshot-preventが利用可能になったら有効化
+    console.log('Screenshot prevention disable called (currently disabled)');
   }
 }
 
@@ -74,19 +70,10 @@ export function disableScreenshotPrevention(): void {
  * スクリーンショット検出リスナーを設定
  */
 export function setupScreenshotListener(
-  callback: () => void
+  _callback: () => void
 ): () => void {
-  if (Platform.OS === 'ios') {
-    const subscription = ScreenshotPrevent.addListener(() => {
-      console.log('Screenshot detected');
-      callback();
-    });
-
-    return () => {
-      subscription.remove();
-    };
-  }
-
+  // TODO: react-native-screenshot-preventが利用可能になったら有効化
+  console.log('Screenshot listener is currently disabled (RN 0.85 compatibility)');
   return () => {};
 }
 
