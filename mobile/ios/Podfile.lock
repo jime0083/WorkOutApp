@@ -3,10 +3,10 @@ PODS:
   - hermes-engine (250829098.0.10):
     - hermes-engine/Pre-built (= 250829098.0.10)
   - hermes-engine/Pre-built (250829098.0.10)
-  - NitroIap (15.2.0):
+  - NitroIap (15.2.3):
     - hermes-engine
     - NitroModules
-    - openiap (= 2.1.0)
+    - openiap (= 2.1.8)
     - RCTRequired
     - RCTTypeSafety
     - React-callinvoker
@@ -51,7 +51,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
-  - openiap (2.1.0)
+  - openiap (2.1.8)
   - RCTDeprecation (0.85.2)
   - RCTRequired (0.85.2)
   - RCTSwiftUI (0.85.2)
@@ -1956,6 +1956,51 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
+  - RNSVG (15.15.4):
+    - hermes-engine
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-Core-prebuilt
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - ReactNativeDependencies
+    - RNSVG/common (= 15.15.4)
+    - Yoga
+  - RNSVG/common (15.15.4):
+    - hermes-engine
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-Core-prebuilt
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - ReactNativeDependencies
+    - Yoga
   - Yoga (0.0.0)
 
 DEPENDENCIES:
@@ -2038,6 +2083,7 @@ DEPENDENCIES:
   - "RNCAsyncStorage (from `../node_modules/@react-native-async-storage/async-storage`)"
   - RNLocalize (from `../node_modules/react-native-localize`)
   - RNScreens (from `../node_modules/react-native-screens`)
+  - RNSVG (from `../node_modules/react-native-svg`)
   - Yoga (from `../node_modules/react-native/ReactCommon/yoga`)
 
 SPEC REPOS:
@@ -2202,15 +2248,17 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native-localize"
   RNScreens:
     :path: "../node_modules/react-native-screens"
+  RNSVG:
+    :path: "../node_modules/react-native-svg"
   Yoga:
     :path: "../node_modules/react-native/ReactCommon/yoga"
 
 SPEC CHECKSUMS:
   FBLazyVector: 26fd21c75314e101f280d401e97f27d54f3f7064
   hermes-engine: 1a13e521136044cbc47f27b70035bb925901b8d6
-  NitroIap: fd4ce6a91618d50d2593227a429d842f8c30fa7c
+  NitroIap: d71bdeb7db718dab30a06c74eeed34314acccc93
   NitroModules: c41b7b778d6557f1e517a80ec681a670321fa001
-  openiap: 35b7ebf3b953bc3f24a57fcb5f98fc4dd30f1b04
+  openiap: f58d5f5fc01570250b1784bcec484b23844d8ada
   RCTDeprecation: c7a2768f905d76ca6d2cfefb26e4349eacbdfca3
   RCTRequired: 5e502c3553cfbed090a991c444448da452fb752e
   RCTSwiftUI: 5ce3ccbdc58b78cc4ebbaace01709ec22d58e131
@@ -2285,6 +2333,7 @@ SPEC CHECKSUMS:
   RNCAsyncStorage: 2ad919e88b8bc2cd80e8697ce66d04d006743283
   RNLocalize: f370284ea42c48f29f0d8dd3a7bcc28a04f82155
   RNScreens: 01b065ded2dfe7987bcce770ff3a196be417ff41
+  RNSVG: 04044c3abcf177fd674a1a3d13097efa1adebcbe
   Yoga: 04bb4bfeb02c0000b940c1e6e89e856cd8de5a71
 
 PODFILE CHECKSUM: 0dc668e6346d45857e2efcf7ffbdc97020da447a

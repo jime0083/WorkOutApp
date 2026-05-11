@@ -36,14 +36,15 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
   const navigation = useNavigation<NavigationProp>();
   const { t } = useTranslation();
 
-  // 本命アカウント情報
-  const [realEmail, setRealEmail] = useState('');
-  const [realPassword, setRealPassword] = useState('');
-  const [realPasswordConfirm, setRealPasswordConfirm] = useState('');
+  // アカウント1（メインアカウント）情報
+  const [account1Email, setAccount1Email] = useState('');
+  const [account1Password, setAccount1Password] = useState('');
+  const [account1PasswordConfirm, setAccount1PasswordConfirm] = useState('');
 
-  // ダミーアカウント情報
-  const [dummyEmail, setDummyEmail] = useState('');
-  const [dummyPassword, setDummyPassword] = useState('');
+  // アカウント2（サブアカウント）情報
+  const [account2Email, setAccount2Email] = useState('');
+  const [account2Password, setAccount2Password] = useState('');
+  const [account2PasswordConfirm, setAccount2PasswordConfirm] = useState('');
 
   // ニックネーム
   const [nickname, setNickname] = useState('');
@@ -55,41 +56,46 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    // 本命メール
-    if (!realEmail.trim()) {
-      newErrors.realEmail = t('validation.emailRequired');
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(realEmail)) {
-      newErrors.realEmail = t('validation.emailInvalid');
+    // アカウント1メール
+    if (!account1Email.trim()) {
+      newErrors.account1Email = t('validation.emailRequired');
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(account1Email)) {
+      newErrors.account1Email = t('validation.emailInvalid');
     }
 
-    // 本命パスワード
-    if (!realPassword) {
-      newErrors.realPassword = t('validation.passwordRequired');
-    } else if (realPassword.length < 8) {
-      newErrors.realPassword = t('validation.passwordMinLength');
+    // アカウント1パスワード
+    if (!account1Password) {
+      newErrors.account1Password = t('validation.passwordRequired');
+    } else if (account1Password.length < 8) {
+      newErrors.account1Password = t('validation.passwordMinLength');
     }
 
-    // パスワード確認
-    if (realPassword !== realPasswordConfirm) {
-      newErrors.realPasswordConfirm = t('validation.passwordMismatch');
+    // アカウント1パスワード確認
+    if (account1Password !== account1PasswordConfirm) {
+      newErrors.account1PasswordConfirm = t('validation.passwordMismatch');
     }
 
-    // ダミーメール
-    if (!dummyEmail.trim()) {
-      newErrors.dummyEmail = t('validation.dummyEmailRequired');
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(dummyEmail)) {
-      newErrors.dummyEmail = t('validation.emailInvalid');
-    } else if (dummyEmail === realEmail) {
-      newErrors.dummyEmail = t('validation.dummyEmailSameAsReal');
+    // アカウント2メール
+    if (!account2Email.trim()) {
+      newErrors.account2Email = t('validation.account2EmailRequired');
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(account2Email)) {
+      newErrors.account2Email = t('validation.emailInvalid');
+    } else if (account2Email === account1Email) {
+      newErrors.account2Email = t('validation.account2EmailSameAsAccount1');
     }
 
-    // ダミーパスワード
-    if (!dummyPassword) {
-      newErrors.dummyPassword = t('validation.dummyPasswordRequired');
-    } else if (dummyPassword.length < 8) {
-      newErrors.dummyPassword = t('validation.passwordMinLength');
-    } else if (dummyPassword === realPassword) {
-      newErrors.dummyPassword = t('validation.dummyPasswordSameAsReal');
+    // アカウント2パスワード
+    if (!account2Password) {
+      newErrors.account2Password = t('validation.account2PasswordRequired');
+    } else if (account2Password.length < 8) {
+      newErrors.account2Password = t('validation.passwordMinLength');
+    } else if (account2Password === account1Password) {
+      newErrors.account2Password = t('validation.account2PasswordSameAsAccount1');
+    }
+
+    // アカウント2パスワード確認
+    if (account2Password !== account2PasswordConfirm) {
+      newErrors.account2PasswordConfirm = t('validation.account2PasswordMismatch');
     }
 
     setErrors(newErrors);
