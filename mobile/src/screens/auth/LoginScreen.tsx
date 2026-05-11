@@ -1,5 +1,6 @@
 /**
  * ログイン画面
+ * Design: Wellness Serenity
  */
 import React, { useState } from 'react';
 import {
@@ -11,19 +12,20 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  StatusBar,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Button, Input } from '../../components';
+import { Input } from '../../components';
 import { useAuthStore } from '../../stores/authStore';
-import { colors, spacing, typography } from '../../theme';
+import { colors, spacing, typography, borderRadius, shadows } from '../../theme';
 import type { AuthStackParamList, RootStackParamList } from '../../navigation/types';
 import '../../i18n';
 
 type NavigationProp = NativeStackNavigationProp<AuthStackParamList & RootStackParamList>;
 
-// 後方互換性のためのPropsインターフェース（オプショナル）
 export interface LoginScreenProps {
   onNavigateToRegister?: () => void;
   onLoginSuccess?: (isDummyMode: boolean) => void;
@@ -34,6 +36,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
   onLoginSuccess,
 }) => {
   const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp>();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -75,9 +78,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
     if (result.success) {
       if (onLoginSuccess) {
         onLoginSuccess(result.isDummyLogin);
-      } else {
-        // デフォルトのナビゲーション動作
-        // 認証成功後はRootNavigatorが自動的にDummyTabsに遷移する
       }
     } else {
       Alert.alert(t('auth.registerFailed'), result.error || t('common.error'));
@@ -97,56 +97,82 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
+      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingTop: insets.top + spacing.xl, paddingBottom: insets.bottom + spacing.xl },
+        ]}
         keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
+        {/* ヘッダー: アプリアイコンとタイトル */}
         <View style={styles.header}>
+          <View style={styles.logoContainer}>
+            <Text style={styles.logoIcon}>❤️</Text>
+          </View>
           <Text style={styles.title}>{t('dummy.title')}</Text>
           <Text style={styles.subtitle}>{t('dummy.appSubtitle')}</Text>
         </View>
 
-        <View style={styles.form}>
-          <Input
-            label={t('auth.email')}
-            value={email}
-            onChangeText={setEmail}
-            placeholder={t('placeholder.email')}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoCorrect={false}
-            error={emailError}
-          />
+        {/* ログインフォーム */}
+        <View style={styles.formCard}>
+          <View style={styles.noteContainer}>
+            <Text style={styles.loginNote}>{t('auth.loginNote')}</Text>
+          </View>
 
-          <Input
-            label={t('auth.password')}
-            value={password}
-            onChangeText={setPassword}
-            placeholder={t('placeholder.password')}
-            secureTextEntry
-            error={passwordError}
-          />
+          <View style={styles.inputContainer}>
+            <Input
+              label={t('auth.email')}
+              value={email}
+              onChangeText={setEmail}
+              placeholder={t('placeholder.email')}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+              error={emailError}
+            />
+          </View>
 
-          {error && <Text style={styles.errorText}>{error}</Text>}
+          <View style={styles.inputContainer}>
+            <Input
+              label={t('auth.password')}
+              value={password}
+              onChangeText={setPassword}
+              placeholder={t('placeholder.password')}
+              secureTextEntry
+              error={passwordError}
+            />
+          </View>
 
-          <Button
-            title={t('auth.login')}
-            onPress={handleLogin}
-            loading={isLoading}
-            fullWidth
-            style={styles.loginButton}
-          />
+          {error && (
+            <View style={styles.errorContainer}>
+              <Text style={styles.errorText}>{error}</Text>
+            </View>
+          )}
 
           <TouchableOpacity
-            onPress={handleNavigateToRegister}
-            style={styles.registerLink}
+            style={[styles.loginButton, isLoading && styles.loginButtonDisabled]}
+            onPress={handleLogin}
+            disabled={isLoading}
+            activeOpacity={0.8}
           >
-            <Text style={styles.registerLinkText}>
-              {t('auth.noAccount')}
-              <Text style={styles.registerLinkTextBold}>{t('auth.register')}</Text>
+            <Text style={styles.loginButtonText}>
+              {isLoading ? t('common.loading') : t('auth.login')}
             </Text>
           </TouchableOpacity>
         </View>
+
+        {/* 登録リンク */}
+        <TouchableOpacity
+          onPress={handleNavigateToRegister}
+          style={styles.registerLink}
+        >
+          <Text style={styles.registerLinkText}>
+            {t('auth.noAccount')}
+            <Text style={styles.registerLinkTextBold}> {t('auth.register')}</Text>
+          </Text>
+        </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -159,38 +185,88 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    justifyContent: 'center',
-    padding: spacing.lg,
+    paddingHorizontal: spacing.xl,
   },
   header: {
     alignItems: 'center',
-    marginBottom: spacing.xl,
+    marginBottom: spacing['3xl'],
+  },
+  logoContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: borderRadius['2xl'],
+    backgroundColor: '#FEE2E2',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.lg,
+    ...shadows.md,
+  },
+  logoIcon: {
+    fontSize: 40,
   },
   title: {
-    fontSize: typography.sizes['3xl'],
+    fontSize: typography.sizes['4xl'],
     fontWeight: typography.weights.bold as '700',
-    color: colors.primary,
-    marginBottom: spacing.sm,
+    color: colors.text.primary,
+    marginBottom: spacing.xs,
+    letterSpacing: -0.5,
   },
   subtitle: {
     fontSize: typography.sizes.md,
     color: colors.text.secondary,
     textAlign: 'center',
   },
-  form: {
-    width: '100%',
+  formCard: {
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius['2xl'],
+    padding: spacing.xl,
+    ...shadows.md,
   },
-  loginButton: {
-    marginTop: spacing.lg,
+  noteContainer: {
+    backgroundColor: colors.primaryMuted,
+    borderRadius: borderRadius.lg,
+    padding: spacing.md,
+    marginBottom: spacing.xl,
+  },
+  loginNote: {
+    fontSize: typography.sizes.sm,
+    color: colors.primaryDark,
+    textAlign: 'center',
+    fontWeight: typography.weights.medium as '500',
+  },
+  inputContainer: {
+    marginBottom: spacing.md,
+  },
+  errorContainer: {
+    backgroundColor: colors.errorLight,
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    marginBottom: spacing.md,
   },
   errorText: {
     color: colors.error,
     fontSize: typography.sizes.sm,
-    marginTop: spacing.sm,
     textAlign: 'center',
   },
+  loginButton: {
+    backgroundColor: colors.primary,
+    borderRadius: borderRadius.xl,
+    paddingVertical: spacing.lg,
+    alignItems: 'center',
+    marginTop: spacing.md,
+    ...shadows.sm,
+  },
+  loginButtonDisabled: {
+    opacity: 0.7,
+  },
+  loginButtonText: {
+    fontSize: typography.sizes.lg,
+    fontWeight: typography.weights.semibold as '600',
+    color: colors.white,
+    letterSpacing: 0.5,
+  },
   registerLink: {
-    marginTop: spacing.lg,
+    marginTop: spacing['2xl'],
     alignItems: 'center',
   },
   registerLinkText: {

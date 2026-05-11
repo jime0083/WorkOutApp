@@ -336,11 +336,25 @@
     "slide1Title": "Secret Messaging App",
     "slide1Description": "This is a messaging app for secret conversations with your partner. You can safely exchange messages without your partner knowing.",
     "slide2Title": "Two Sets of Credentials",
-    "slide2Description": "Set up two email addresses and passwords. Use them to display dummy message screens or delete all messages to safely protect your private conversations.",
+    "slide2Description": "Set up two email addresses and passwords. Use them to display dummy screens or delete all messages to safely protect your private conversations.",
     "slide3Title": "Account Setup",
-    "slide3Description": "Set up a dummy email/password and a real email/password - two sets of credentials for your account.",
+    "slide3Description": "Set up Account 1 and Account 2 - two sets of email addresses and passwords.",
     "slide4Title": "Start Free",
     "slide4Description": "You can send up to 10 messages per month for free."
+  },
+  "featureExplanation": {
+    "title": "Why Your Messages Are Safe",
+    "slide1Title": "Two Accounts for Safety",
+    "slide1Description": "This app requires two email addresses and passwords to enable safe messaging.",
+    "slide2Title": "Two Password Entries",
+    "slide2Description": "You enter a password when opening Settings and again when opening Messages from Settings.",
+    "slide3Title": "Account 1 for Real Messages",
+    "slide3Description": "Enter Account 1 password for both Settings and Messages to see your real message screen.",
+    "slide4Title": "Account 2 for Dummy Screen",
+    "slide4Description": "Enter Account 2 password for both Settings and Messages to see a dummy message screen.",
+    "slide5Title": "Emergency Delete Feature",
+    "slide5Description": "Enter Account 1 for Settings and Account 2 for Messages to delete all messages (Premium only).",
+    "getStarted": "Create Account"
   },
   "notification": {
     "permissionTitle": "Enable Notifications",

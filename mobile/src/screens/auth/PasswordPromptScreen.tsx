@@ -1,6 +1,7 @@
 /**
  * PasswordPromptScreen - パスワード入力画面
  * 設定画面/メッセージ画面へのアクセス時に認証を行う
+ * Design: Wellness Serenity
  */
 import React, { useState, useCallback } from 'react';
 import {
@@ -12,17 +13,19 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  StatusBar,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
-import { Button, Input } from '../../components';
+import { Input } from '../../components';
 import { verifyUserCredentials } from '../../services/auth';
 import { deleteAllMessages } from '../../services/messages';
 import { useAccessStore } from '../../stores/accessStore';
 import { useAuthStore } from '../../stores/authStore';
-import { colors, spacing, typography } from '../../theme';
+import { colors, spacing, typography, borderRadius, shadows } from '../../theme';
 import type { MainStackParamList } from '../../navigation/types';
 import { isPremiumUser } from '../../types/user';
 import '../../i18n';
@@ -35,6 +38,7 @@ export const PasswordPromptScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<PasswordPromptRouteProp>();
   const { purpose } = route.params;
+  const insets = useSafeAreaInsets();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -174,64 +178,89 @@ export const PasswordPromptScreen: React.FC = () => {
       : t('nav.talk');
   };
 
+  const getIcon = () => {
+    return purpose === 'settings' ? '⚙️' : '💬';
+  };
+
   return (
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
+      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingTop: insets.top + spacing.xl, paddingBottom: insets.bottom + spacing.xl },
+        ]}
         keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
         <TouchableOpacity style={styles.closeButton} onPress={handleCancel}>
-          <Text style={styles.closeButtonText}>×</Text>
+          <View style={styles.closeButtonCircle}>
+            <Text style={styles.closeButtonText}>×</Text>
+          </View>
         </TouchableOpacity>
 
         <View style={styles.header}>
+          <View style={styles.iconContainer}>
+            <Text style={styles.icon}>{getIcon()}</Text>
+          </View>
           <Text style={styles.title}>{getTitle()}</Text>
           <Text style={styles.subtitle}>
             {t('auth.loginSubtitle')}
           </Text>
         </View>
 
-        <View style={styles.form}>
-          <Input
-            label={t('auth.email')}
-            value={email}
-            onChangeText={setEmail}
-            placeholder={t('placeholder.email')}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoCorrect={false}
-            error={emailError}
-          />
+        <View style={styles.formCard}>
+          <View style={styles.inputContainer}>
+            <Input
+              label={t('auth.email')}
+              value={email}
+              onChangeText={setEmail}
+              placeholder={t('placeholder.email')}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+              error={emailError}
+            />
+          </View>
 
-          <Input
-            label={t('auth.password')}
-            value={password}
-            onChangeText={setPassword}
-            placeholder={t('placeholder.password')}
-            secureTextEntry
-            error={passwordError}
-          />
+          <View style={styles.inputContainer}>
+            <Input
+              label={t('auth.password')}
+              value={password}
+              onChangeText={setPassword}
+              placeholder={t('placeholder.password')}
+              secureTextEntry
+              error={passwordError}
+            />
+          </View>
 
-          {error && <Text style={styles.errorText}>{error}</Text>}
+          {error && (
+            <View style={styles.errorContainer}>
+              <Text style={styles.errorText}>{error}</Text>
+            </View>
+          )}
 
-          <Button
-            title={t('auth.login')}
+          <TouchableOpacity
+            style={[styles.verifyButton, isLoading && styles.verifyButtonDisabled]}
             onPress={handleVerify}
-            loading={isLoading}
-            fullWidth
-            style={styles.verifyButton}
-          />
+            disabled={isLoading}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.verifyButtonText}>
+              {isLoading ? t('common.loading') : t('auth.login')}
+            </Text>
+          </TouchableOpacity>
 
-          <Button
-            title={t('common.cancel')}
-            onPress={handleCancel}
-            variant="outline"
-            fullWidth
+          <TouchableOpacity
             style={styles.cancelButton}
-          />
+            onPress={handleCancel}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.cancelButtonText}>{t('common.cancel')}</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -246,46 +275,105 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     justifyContent: 'center',
-    padding: spacing.xl,
+    paddingHorizontal: spacing.xl,
   },
   closeButton: {
     position: 'absolute',
-    top: spacing.xl,
-    right: spacing.md,
+    top: spacing.md,
+    right: 0,
     padding: spacing.sm,
   },
+  closeButtonCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.gray[200],
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   closeButtonText: {
-    fontSize: 28,
+    fontSize: 22,
     color: colors.text.secondary,
+    fontWeight: typography.weights.medium as '500',
   },
   header: {
     alignItems: 'center',
-    marginBottom: spacing['3xl'],
+    marginBottom: spacing['2xl'],
+  },
+  iconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: borderRadius['2xl'],
+    backgroundColor: colors.primaryMuted,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.lg,
+    ...shadows.md,
+  },
+  icon: {
+    fontSize: 40,
   },
   title: {
-    fontSize: typography.sizes['2xl'],
+    fontSize: typography.sizes['3xl'],
     fontWeight: typography.weights.bold as '700',
     color: colors.text.primary,
     marginBottom: spacing.xs,
+    letterSpacing: -0.5,
   },
   subtitle: {
     fontSize: typography.sizes.md,
     color: colors.text.secondary,
+    textAlign: 'center',
   },
-  form: {
-    width: '100%',
+  formCard: {
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius['2xl'],
+    padding: spacing.xl,
+    ...shadows.md,
+  },
+  inputContainer: {
+    marginBottom: spacing.md,
+  },
+  errorContainer: {
+    backgroundColor: colors.errorLight,
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    marginBottom: spacing.md,
   },
   errorText: {
     color: colors.error,
     fontSize: typography.sizes.sm,
     textAlign: 'center',
-    marginBottom: spacing.md,
   },
   verifyButton: {
-    marginTop: spacing.lg,
+    backgroundColor: colors.primary,
+    borderRadius: borderRadius.xl,
+    paddingVertical: spacing.lg,
+    alignItems: 'center',
+    marginTop: spacing.md,
+    ...shadows.sm,
+  },
+  verifyButtonDisabled: {
+    opacity: 0.7,
+  },
+  verifyButtonText: {
+    fontSize: typography.sizes.lg,
+    fontWeight: typography.weights.semibold as '600',
+    color: colors.white,
+    letterSpacing: 0.5,
   },
   cancelButton: {
+    borderRadius: borderRadius.xl,
+    paddingVertical: spacing.lg,
+    alignItems: 'center',
     marginTop: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.gray[300],
+  },
+  cancelButtonText: {
+    fontSize: typography.sizes.lg,
+    fontWeight: typography.weights.medium as '500',
+    color: colors.text.secondary,
   },
 });
 

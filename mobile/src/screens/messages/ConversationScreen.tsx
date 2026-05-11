@@ -1,20 +1,22 @@
 /**
  * ConversationScreen - 会話詳細画面
  * メッセージの送受信
+ * Design: Wellness Serenity
  */
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   FlatList,
   TouchableOpacity,
   TextInput,
   KeyboardAvoidingView,
   Platform,
   Alert,
+  StatusBar,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -34,7 +36,7 @@ import {
   Timestamp,
 } from 'firebase/firestore';
 import { getFirestoreInstance } from '../../services/firebase';
-import { colors, typography, spacing } from '../../theme';
+import { colors, typography, spacing, borderRadius, shadows } from '../../theme';
 import { useAuthStore } from '../../stores/authStore';
 import type { MainStackParamList } from '../../navigation/types';
 import { isPremiumUser } from '../../types/user';
@@ -59,6 +61,7 @@ export const ConversationScreen: React.FC = () => {
   const route = useRoute<ConversationRouteProp>();
   const { conversationId, friendId } = route.params;
   const { user, userDocument } = useAuthStore();
+  const insets = useSafeAreaInsets();
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
@@ -219,13 +222,22 @@ export const ConversationScreen: React.FC = () => {
   const remainingMessages = Math.max(0, MAX_FREE_MESSAGES - messageCount);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor={colors.surface} />
+
       {/* ヘッダー */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + spacing.sm }]}>
         <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-          <Text style={styles.backButtonText}>{'<'}</Text>
+          <Text style={styles.backArrow}>‹</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{friendName}</Text>
+        <View style={styles.headerCenter}>
+          <View style={styles.headerAvatar}>
+            <Text style={styles.headerAvatarText}>
+              {friendName.charAt(0).toUpperCase() || '?'}
+            </Text>
+          </View>
+          <Text style={styles.headerTitle}>{friendName}</Text>
+        </View>
         <View style={styles.headerRight} />
       </View>
 
@@ -252,10 +264,11 @@ export const ConversationScreen: React.FC = () => {
           onContentSizeChange={() =>
             flatListRef.current?.scrollToEnd({ animated: false })
           }
+          showsVerticalScrollIndicator={false}
         />
 
         {/* 入力エリア */}
-        <View style={styles.inputContainer}>
+        <View style={[styles.inputContainer, { paddingBottom: insets.bottom + spacing.sm }]}>
           <TextInput
             style={styles.input}
             value={inputText}
@@ -265,7 +278,7 @@ export const ConversationScreen: React.FC = () => {
                 ? t('placeholder.messageLimitReached')
                 : t('placeholder.message')
             }
-            placeholderTextColor={colors.text.secondary}
+            placeholderTextColor={colors.text.tertiary}
             multiline
             maxLength={1000}
             editable={isPremium || messageCount < MAX_FREE_MESSAGES}
@@ -277,12 +290,13 @@ export const ConversationScreen: React.FC = () => {
             ]}
             onPress={handleSend}
             disabled={!inputText.trim() || isLoading}
+            activeOpacity={0.8}
           >
             <Text style={styles.sendButtonText}>{t('common.send')}</Text>
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -295,17 +309,43 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.md,
+    backgroundColor: colors.surface,
     borderBottomWidth: 1,
     borderBottomColor: colors.gray[200],
+    ...shadows.sm,
   },
   backButton: {
-    padding: spacing.sm,
-    marginLeft: -spacing.sm,
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  backButtonText: {
-    fontSize: typography.sizes.xl,
+  backArrow: {
+    fontSize: 32,
     color: colors.primary,
+    fontWeight: typography.weights.medium as '500',
+  },
+  headerCenter: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: spacing.sm,
+  },
+  headerAvatarText: {
+    fontSize: typography.sizes.md,
+    fontWeight: typography.weights.bold as '700',
+    color: colors.white,
   },
   headerTitle: {
     fontSize: typography.sizes.lg,
@@ -313,22 +353,24 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
   },
   headerRight: {
-    width: 40,
+    width: 44,
   },
   remainingBanner: {
-    backgroundColor: colors.primaryLight,
-    padding: spacing.sm,
+    backgroundColor: colors.primaryMuted,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
     alignItems: 'center',
   },
   remainingText: {
     fontSize: typography.sizes.sm,
-    color: colors.primary,
+    color: colors.primaryDark,
+    fontWeight: typography.weights.medium as '500',
   },
   keyboardContainer: {
     flex: 1,
   },
   messagesContent: {
-    padding: spacing.md,
+    padding: spacing.lg,
     flexGrow: 1,
   },
   messageContainer: {
@@ -344,20 +386,22 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   messageBubble: {
-    padding: spacing.sm,
-    paddingHorizontal: spacing.md,
-    borderRadius: 16,
+    padding: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderRadius: borderRadius.xl,
+    ...shadows.xs,
   },
   myBubble: {
     backgroundColor: colors.primary,
-    borderBottomRightRadius: 4,
+    borderBottomRightRadius: spacing.xs,
   },
   theirBubble: {
-    backgroundColor: colors.gray[200],
-    borderBottomLeftRadius: 4,
+    backgroundColor: colors.surface,
+    borderBottomLeftRadius: spacing.xs,
   },
   messageText: {
     fontSize: typography.sizes.md,
+    lineHeight: 22,
   },
   myMessageText: {
     color: colors.white,
@@ -371,24 +415,25 @@ const styles = StyleSheet.create({
   },
   messageTime: {
     fontSize: typography.sizes.xs,
-    color: colors.text.secondary,
-    marginTop: 2,
+    color: colors.text.tertiary,
+    marginTop: spacing.xs,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    padding: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    backgroundColor: colors.surface,
     borderTopWidth: 1,
     borderTopColor: colors.gray[200],
-    backgroundColor: colors.surface,
   },
   input: {
     flex: 1,
-    minHeight: 40,
+    minHeight: 44,
     maxHeight: 100,
-    backgroundColor: colors.gray[100],
-    borderRadius: 20,
-    paddingHorizontal: spacing.md,
+    backgroundColor: colors.backgroundSecondary,
+    borderRadius: borderRadius.xl,
+    paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
     fontSize: typography.sizes.md,
     color: colors.text.primary,
@@ -396,11 +441,13 @@ const styles = StyleSheet.create({
   },
   sendButton: {
     backgroundColor: colors.primary,
-    borderRadius: 20,
-    paddingHorizontal: spacing.md,
+    borderRadius: borderRadius.xl,
+    paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
     justifyContent: 'center',
     alignItems: 'center',
+    minHeight: 44,
+    ...shadows.sm,
   },
   sendButtonDisabled: {
     backgroundColor: colors.gray[300],

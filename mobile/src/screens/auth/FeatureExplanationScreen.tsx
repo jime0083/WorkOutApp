@@ -1,6 +1,6 @@
 /**
- * OnboardingScreen - オンボーディング画面
- * 初回起動時に4枚のスライドを表示
+ * FeatureExplanationScreen - 仕様説明オンボーディング画面
+ * アカウント作成前にアプリの仕組みを説明する5枚のスライド
  * Design: Wellness Serenity
  */
 import React, { useState, useCallback, useRef } from 'react';
@@ -16,11 +16,15 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { colors, typography, spacing, borderRadius, shadows } from '../../theme';
-import { useOnboardingStore } from '../../stores/onboardingStore';
+import type { AuthStackParamList } from '../../navigation/types';
 import '../../i18n';
 
 const { width } = Dimensions.get('window');
+
+type NavigationProp = NativeStackNavigationProp<AuthStackParamList>;
 
 interface SlideData {
   id: string;
@@ -28,43 +32,56 @@ interface SlideData {
   titleKey: string;
   descriptionKey: string;
   backgroundColor: string;
+  accentColor: string;
 }
 
 const slides: SlideData[] = [
   {
     id: '1',
-    icon: '🔒',
-    titleKey: 'onboarding.slide1Title',
-    descriptionKey: 'onboarding.slide1Description',
+    icon: '🔐',
+    titleKey: 'featureExplanation.slide1Title',
+    descriptionKey: 'featureExplanation.slide1Description',
     backgroundColor: '#F0FDFA',
+    accentColor: colors.primary,
   },
   {
     id: '2',
     icon: '🔑',
-    titleKey: 'onboarding.slide2Title',
-    descriptionKey: 'onboarding.slide2Description',
-    backgroundColor: '#ECFDF5',
+    titleKey: 'featureExplanation.slide2Title',
+    descriptionKey: 'featureExplanation.slide2Description',
+    backgroundColor: '#FEF3C7',
+    accentColor: '#F59E0B',
   },
   {
     id: '3',
-    icon: '👤',
-    titleKey: 'onboarding.slide3Title',
-    descriptionKey: 'onboarding.slide3Description',
-    backgroundColor: '#F0FDF4',
+    icon: '💬',
+    titleKey: 'featureExplanation.slide3Title',
+    descriptionKey: 'featureExplanation.slide3Description',
+    backgroundColor: '#DBEAFE',
+    accentColor: '#3B82F6',
   },
   {
     id: '4',
-    icon: '💬',
-    titleKey: 'onboarding.slide4Title',
-    descriptionKey: 'onboarding.slide4Description',
-    backgroundColor: '#F0FDFA',
+    icon: '🎭',
+    titleKey: 'featureExplanation.slide4Title',
+    descriptionKey: 'featureExplanation.slide4Description',
+    backgroundColor: '#F3E8FF',
+    accentColor: '#A855F7',
+  },
+  {
+    id: '5',
+    icon: '🗑️',
+    titleKey: 'featureExplanation.slide5Title',
+    descriptionKey: 'featureExplanation.slide5Description',
+    backgroundColor: '#FEE2E2',
+    accentColor: '#EF4444',
   },
 ];
 
-export const OnboardingScreen: React.FC = () => {
+export const FeatureExplanationScreen: React.FC = () => {
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
-  const { completeOnboarding } = useOnboardingStore();
+  const navigation = useNavigation<NavigationProp>();
   const [currentIndex, setCurrentIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
   const scrollX = useRef(new Animated.Value(0)).current;
@@ -76,13 +93,13 @@ export const OnboardingScreen: React.FC = () => {
         animated: true,
       });
     } else {
-      completeOnboarding();
+      navigation.navigate('Register');
     }
-  }, [currentIndex, completeOnboarding]);
+  }, [currentIndex, navigation]);
 
   const handleSkip = useCallback(() => {
-    completeOnboarding();
-  }, [completeOnboarding]);
+    navigation.navigate('Register');
+  }, [navigation]);
 
   const renderSlide = ({ item, index }: { item: SlideData; index: number }) => {
     const inputRange = [(index - 1) * width, index * width, (index + 1) * width];
@@ -104,6 +121,9 @@ export const OnboardingScreen: React.FC = () => {
         <Animated.View style={[styles.iconContainer, { transform: [{ scale }], opacity }]}>
           <View style={[styles.iconBackground, { backgroundColor: item.backgroundColor }]}>
             <Text style={styles.icon}>{item.icon}</Text>
+          </View>
+          <View style={[styles.stepBadge, { backgroundColor: item.accentColor }]}>
+            <Text style={styles.stepNumber}>{index + 1}</Text>
           </View>
         </Animated.View>
         <Animated.View style={{ opacity }}>
@@ -171,6 +191,17 @@ export const OnboardingScreen: React.FC = () => {
       <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
 
       <View style={styles.header}>
+        <View style={styles.headerTitleContainer}>
+          <Text style={styles.headerTitle}>{t('featureExplanation.title')}</Text>
+          <View style={styles.progressBar}>
+            <View
+              style={[
+                styles.progressFill,
+                { width: `${((currentIndex + 1) / slides.length) * 100}%` },
+              ]}
+            />
+          </View>
+        </View>
         {!isLastSlide && (
           <TouchableOpacity onPress={handleSkip} style={styles.skipButton}>
             <Text style={styles.skipText}>{t('common.next')}</Text>
@@ -204,9 +235,21 @@ export const OnboardingScreen: React.FC = () => {
           activeOpacity={0.8}
         >
           <Text style={styles.nextText}>
-            {isLastSlide ? t('common.done') : t('common.next')}
+            {isLastSlide ? t('featureExplanation.getStarted') : t('common.next')}
           </Text>
         </TouchableOpacity>
+
+        {isLastSlide && (
+          <TouchableOpacity
+            onPress={() => navigation.navigate('Login')}
+            style={styles.loginLink}
+          >
+            <Text style={styles.loginLinkText}>
+              {t('auth.hasAccount')}
+              <Text style={styles.loginLinkTextBold}> {t('auth.login')}</Text>
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );
@@ -219,10 +262,31 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.md,
-    minHeight: 48,
+  },
+  headerTitleContainer: {
+    flex: 1,
+    marginRight: spacing.md,
+  },
+  headerTitle: {
+    fontSize: typography.sizes.lg,
+    fontWeight: typography.weights.bold as '700',
+    color: colors.text.primary,
+    marginBottom: spacing.sm,
+  },
+  progressBar: {
+    height: 4,
+    backgroundColor: colors.gray200,
+    borderRadius: borderRadius.full,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: colors.primary,
+    borderRadius: borderRadius.full,
   },
   skipButton: {
     paddingVertical: spacing.sm,
@@ -242,33 +306,50 @@ const styles = StyleSheet.create({
   },
   iconContainer: {
     marginBottom: spacing['3xl'],
+    position: 'relative',
   },
   iconBackground: {
-    width: 160,
-    height: 160,
-    borderRadius: borderRadius['3xl'],
+    width: 140,
+    height: 140,
+    borderRadius: borderRadius['2xl'],
     alignItems: 'center',
     justifyContent: 'center',
     ...shadows.lg,
   },
+  stepBadge: {
+    position: 'absolute',
+    top: -8,
+    right: -8,
+    width: 32,
+    height: 32,
+    borderRadius: borderRadius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...shadows.sm,
+  },
+  stepNumber: {
+    fontSize: typography.sizes.md,
+    fontWeight: typography.weights.bold as '700',
+    color: colors.white,
+  },
   icon: {
-    fontSize: 72,
+    fontSize: 64,
   },
   title: {
-    fontSize: typography.sizes['3xl'],
+    fontSize: typography.sizes['2xl'],
     fontWeight: typography.weights.bold as '700',
     color: colors.text.primary,
     textAlign: 'center',
-    marginBottom: spacing.lg,
-    letterSpacing: -0.5,
+    marginBottom: spacing.md,
+    letterSpacing: -0.3,
   },
   description: {
-    fontSize: typography.sizes.lg,
+    fontSize: typography.sizes.md,
     fontWeight: typography.weights.regular as '400',
     color: colors.text.secondary,
     textAlign: 'center',
-    lineHeight: 26,
-    paddingHorizontal: spacing.md,
+    lineHeight: 24,
+    paddingHorizontal: spacing.lg,
   },
   dotsContainer: {
     flexDirection: 'row',
@@ -297,6 +378,18 @@ const styles = StyleSheet.create({
     color: colors.white,
     letterSpacing: 0.5,
   },
+  loginLink: {
+    marginTop: spacing.xl,
+    alignItems: 'center',
+  },
+  loginLinkText: {
+    fontSize: typography.sizes.md,
+    color: colors.text.secondary,
+  },
+  loginLinkTextBold: {
+    color: colors.primary,
+    fontWeight: typography.weights.semibold as '600',
+  },
 });
 
-export default OnboardingScreen;
+export default FeatureExplanationScreen;

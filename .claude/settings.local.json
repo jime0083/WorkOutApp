@@ -22,7 +22,8 @@
       "Bash(find:*)",
       "WebSearch",
       "WebFetch(domain:github.com)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Skill(example-skills:frontend-design)"
     ]
   }
 }

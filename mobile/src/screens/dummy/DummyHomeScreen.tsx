@@ -1,6 +1,7 @@
 /**
  * DummyHomeScreen - ダミーホーム画面
  * Apple Health風のフィットネスダッシュボード
+ * Design: Wellness Serenity
  */
 import React from 'react';
 import {
@@ -8,11 +9,12 @@ import {
   ScrollView,
   Text,
   StyleSheet,
-  SafeAreaView,
   TouchableOpacity,
+  StatusBar,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
-import { colors, typography, spacing } from '../../theme';
+import { colors, typography, spacing, borderRadius, shadows } from '../../theme';
 import {
   StepCounter,
   ActivityRing,
@@ -33,13 +35,18 @@ interface DummyHomeScreenProps {
 
 export const DummyHomeScreen: React.FC<DummyHomeScreenProps> = () => {
   const { t, i18n } = useTranslation();
+  const insets = useSafeAreaInsets();
   const locale = i18n.language === 'ja' ? 'ja-JP' : 'en-US';
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[
+          styles.content,
+          { paddingTop: insets.top + spacing.md, paddingBottom: insets.bottom + spacing.xl },
+        ]}
         showsVerticalScrollIndicator={false}
       >
         {/* ヘッダー */}
@@ -60,13 +67,15 @@ export const DummyHomeScreen: React.FC<DummyHomeScreenProps> = () => {
         </View>
 
         {/* アクティビティリング */}
-        <TouchableOpacity style={styles.section} activeOpacity={0.9}>
-          <Text style={styles.sectionTitle}>{t('dummy.activity')}</Text>
-          <ActivityRing rings={activityRings} size={180} />
+        <TouchableOpacity style={styles.activityCard} activeOpacity={0.9}>
+          <Text style={styles.cardTitle}>{t('dummy.activity')}</Text>
+          <View style={styles.activityContent}>
+            <ActivityRing rings={activityRings} size={180} />
+          </View>
         </TouchableOpacity>
 
         {/* 歩数カウンター */}
-        <View style={styles.section}>
+        <View style={styles.stepCard}>
           <StepCounter steps={todayStats.steps} />
         </View>
 
@@ -87,7 +96,7 @@ export const DummyHomeScreen: React.FC<DummyHomeScreenProps> = () => {
               title={t('dummy.movementDistance')}
               value={todayStats.distance}
               unit="km"
-              color="#5AC8FA"
+              color={colors.primary}
               subtitle={t('dummy.walkingEquivalent')}
             />
           </View>
@@ -96,7 +105,7 @@ export const DummyHomeScreen: React.FC<DummyHomeScreenProps> = () => {
               title={t('dummy.heartRate')}
               value={heartRateData.current}
               unit="BPM"
-              color="#FF3B30"
+              color="#EF4444"
               subtitle={t('dummy.restingHeartRate', { value: heartRateData.resting })}
             />
           </View>
@@ -104,7 +113,7 @@ export const DummyHomeScreen: React.FC<DummyHomeScreenProps> = () => {
             <HealthCard
               title={t('dummy.sleep')}
               value={`${sleepData.hours}${t('dummy.sleepUnit')}${sleepData.minutes}${t('dummy.minutes')}`}
-              color="#5856D6"
+              color="#6366F1"
               subtitle={t('dummy.lastNightSleep')}
             />
           </View>
@@ -115,16 +124,25 @@ export const DummyHomeScreen: React.FC<DummyHomeScreenProps> = () => {
           <Text style={styles.sectionTitle}>{t('dummy.todaySummary')}</Text>
           <View style={styles.summaryCard}>
             <View style={styles.summaryItem}>
+              <View style={[styles.summaryIconContainer, { backgroundColor: colors.primaryMuted }]}>
+                <Text style={styles.summaryIcon}>⏱️</Text>
+              </View>
               <Text style={styles.summaryLabel}>{t('dummy.activeTime')}</Text>
               <Text style={styles.summaryValue}>{todayStats.activeMinutes}{t('dummy.minutes')}</Text>
             </View>
             <View style={styles.summaryDivider} />
             <View style={styles.summaryItem}>
+              <View style={[styles.summaryIconContainer, { backgroundColor: '#DBEAFE' }]}>
+                <Text style={styles.summaryIcon}>🧍</Text>
+              </View>
               <Text style={styles.summaryLabel}>{t('dummy.standTime')}</Text>
               <Text style={styles.summaryValue}>{todayStats.standHours}{t('dummy.hours')}</Text>
             </View>
             <View style={styles.summaryDivider} />
             <View style={styles.summaryItem}>
+              <View style={[styles.summaryIconContainer, { backgroundColor: '#FEE2E2' }]}>
+                <Text style={styles.summaryIcon}>🏃</Text>
+              </View>
               <Text style={styles.summaryLabel}>{t('dummy.exercise')}</Text>
               <Text style={styles.summaryValue}>{todayStats.exerciseMinutes}{t('dummy.minutes')}</Text>
             </View>
@@ -134,7 +152,7 @@ export const DummyHomeScreen: React.FC<DummyHomeScreenProps> = () => {
         {/* スペーサー */}
         <View style={styles.bottomSpacer} />
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -147,10 +165,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    padding: spacing.md,
+    paddingHorizontal: spacing.xl,
   },
   header: {
-    marginBottom: spacing.lg,
+    marginBottom: spacing.xl,
   },
   headerContent: {
     flexDirection: 'row',
@@ -161,17 +179,35 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   greeting: {
-    fontSize: typography.sizes['2xl'],
+    fontSize: typography.sizes['3xl'],
     fontWeight: typography.weights.bold as '700',
     color: colors.text.primary,
+    letterSpacing: -0.5,
   },
   date: {
     fontSize: typography.sizes.md,
     color: colors.text.secondary,
     marginTop: spacing.xs,
   },
-  section: {
+  activityCard: {
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius['2xl'],
+    padding: spacing.xl,
     marginBottom: spacing.lg,
+    ...shadows.md,
+  },
+  cardTitle: {
+    fontSize: typography.sizes.lg,
+    fontWeight: typography.weights.semibold as '600',
+    color: colors.text.primary,
+    marginBottom: spacing.md,
+  },
+  activityContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepCard: {
+    marginBottom: spacing.xl,
   },
   sectionTitle: {
     fontSize: typography.sizes.lg,
@@ -189,31 +225,39 @@ const styles = StyleSheet.create({
     padding: spacing.xs,
   },
   summarySection: {
-    marginTop: spacing.md,
+    marginTop: spacing.lg,
   },
   summaryCard: {
     backgroundColor: colors.surface,
-    borderRadius: 16,
-    padding: spacing.md,
+    borderRadius: borderRadius['2xl'],
+    padding: spacing.xl,
     flexDirection: 'row',
-    shadowColor: colors.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    ...shadows.md,
   },
   summaryItem: {
     flex: 1,
     alignItems: 'center',
   },
+  summaryIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: borderRadius.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.sm,
+  },
+  summaryIcon: {
+    fontSize: 20,
+  },
   summaryLabel: {
     fontSize: typography.sizes.xs,
     color: colors.text.secondary,
     marginBottom: spacing.xs,
+    textAlign: 'center',
   },
   summaryValue: {
     fontSize: typography.sizes.lg,
-    fontWeight: typography.weights.semibold as '600',
+    fontWeight: typography.weights.bold as '700',
     color: colors.text.primary,
   },
   summaryDivider: {

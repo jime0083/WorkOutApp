@@ -11,6 +11,7 @@ export type RootStackParamList = {
 
 // 認証スタックの画面パラメータ
 export type AuthStackParamList = {
+  FeatureExplanation: undefined;
   Login: undefined;
   Register: undefined;
 };

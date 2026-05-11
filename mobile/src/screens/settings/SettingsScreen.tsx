@@ -1,6 +1,7 @@
 /**
  * 設定画面（認証後）
  * 言語切り替え、メッセージ画面へのアクセス
+ * Design: Wellness Serenity
  */
 import React, { useCallback } from 'react';
 import {
@@ -8,13 +9,14 @@ import {
   ScrollView,
   Text,
   StyleSheet,
-  SafeAreaView,
   TouchableOpacity,
+  StatusBar,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { colors, typography, spacing } from '../../theme';
+import { colors, typography, spacing, borderRadius, shadows } from '../../theme';
 import type { MainStackParamList } from '../../navigation/types';
 import '../../i18n';
 
@@ -23,6 +25,7 @@ type NavigationProp = NativeStackNavigationProp<MainStackParamList>;
 export const SettingsScreen: React.FC = () => {
   const { t, i18n } = useTranslation();
   const navigation = useNavigation<NavigationProp>();
+  const insets = useSafeAreaInsets();
 
   const changeLanguage = useCallback((lng: string) => {
     i18n.changeLanguage(lng);
@@ -39,16 +42,23 @@ export const SettingsScreen: React.FC = () => {
   const currentLanguage = i18n.language;
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[
+          styles.content,
+          { paddingTop: insets.top + spacing.md, paddingBottom: insets.bottom + spacing.xl },
+        ]}
         showsVerticalScrollIndicator={false}
       >
         {/* ヘッダー */}
         <View style={styles.header}>
           <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-            <Text style={styles.backButtonText}>{'<'} {t('common.back')}</Text>
+            <View style={styles.backButtonContainer}>
+              <Text style={styles.backArrow}>‹</Text>
+              <Text style={styles.backButtonText}>{t('common.back')}</Text>
+            </View>
           </TouchableOpacity>
           <Text style={styles.title}>{t('settings.title')}</Text>
         </View>
@@ -60,9 +70,12 @@ export const SettingsScreen: React.FC = () => {
             <TouchableOpacity
               style={styles.menuItem}
               onPress={handleOpenMessages}
+              activeOpacity={0.7}
             >
               <View style={styles.menuItemContent}>
-                <Text style={styles.menuItemIcon}>💬</Text>
+                <View style={[styles.iconContainer, { backgroundColor: colors.primaryMuted }]}>
+                  <Text style={styles.menuItemIcon}>💬</Text>
+                </View>
                 <View style={styles.menuItemTextContainer}>
                   <Text style={styles.menuItemTitle}>{t('nav.talk')}</Text>
                   <Text style={styles.menuItemSubtitle}>
@@ -85,17 +98,23 @@ export const SettingsScreen: React.FC = () => {
                 currentLanguage === 'ja' && styles.languageItemActive,
               ]}
               onPress={() => changeLanguage('ja')}
+              activeOpacity={0.7}
             >
-              <Text
-                style={[
-                  styles.languageText,
-                  currentLanguage === 'ja' && styles.languageTextActive,
-                ]}
-              >
-                {t('settings.japanese')}
-              </Text>
+              <View style={styles.languageContent}>
+                <Text style={styles.languageFlag}>🇯🇵</Text>
+                <Text
+                  style={[
+                    styles.languageText,
+                    currentLanguage === 'ja' && styles.languageTextActive,
+                  ]}
+                >
+                  {t('settings.japanese')}
+                </Text>
+              </View>
               {currentLanguage === 'ja' && (
-                <Text style={styles.checkmark}>✓</Text>
+                <View style={styles.checkmarkContainer}>
+                  <Text style={styles.checkmark}>✓</Text>
+                </View>
               )}
             </TouchableOpacity>
 
@@ -107,17 +126,23 @@ export const SettingsScreen: React.FC = () => {
                 currentLanguage === 'en' && styles.languageItemActive,
               ]}
               onPress={() => changeLanguage('en')}
+              activeOpacity={0.7}
             >
-              <Text
-                style={[
-                  styles.languageText,
-                  currentLanguage === 'en' && styles.languageTextActive,
-                ]}
-              >
-                {t('settings.english')}
-              </Text>
+              <View style={styles.languageContent}>
+                <Text style={styles.languageFlag}>🇺🇸</Text>
+                <Text
+                  style={[
+                    styles.languageText,
+                    currentLanguage === 'en' && styles.languageTextActive,
+                  ]}
+                >
+                  {t('settings.english')}
+                </Text>
+              </View>
               {currentLanguage === 'en' && (
-                <Text style={styles.checkmark}>✓</Text>
+                <View style={styles.checkmarkContainer}>
+                  <Text style={styles.checkmark}>✓</Text>
+                </View>
               )}
             </TouchableOpacity>
           </View>
@@ -130,9 +155,12 @@ export const SettingsScreen: React.FC = () => {
             <TouchableOpacity
               style={styles.menuItem}
               onPress={() => navigation.navigate('Subscription')}
+              activeOpacity={0.7}
             >
               <View style={styles.menuItemContent}>
-                <Text style={styles.menuItemIcon}>⭐</Text>
+                <View style={[styles.iconContainer, { backgroundColor: '#FEF3C7' }]}>
+                  <Text style={styles.menuItemIcon}>⭐</Text>
+                </View>
                 <Text style={styles.menuItemTitle}>{t('subscription.title')}</Text>
               </View>
               <Text style={styles.arrow}>›</Text>
@@ -142,9 +170,12 @@ export const SettingsScreen: React.FC = () => {
 
             <TouchableOpacity
               style={[styles.menuItem, styles.dangerItem]}
+              activeOpacity={0.7}
             >
               <View style={styles.menuItemContent}>
-                <Text style={styles.menuItemIcon}>🗑️</Text>
+                <View style={[styles.iconContainer, { backgroundColor: colors.errorLight }]}>
+                  <Text style={styles.menuItemIcon}>🗑️</Text>
+                </View>
                 <View style={styles.menuItemTextContainer}>
                   <Text style={[styles.menuItemTitle, styles.dangerText]}>
                     {t('settings.deleteAccount')}
@@ -155,8 +186,14 @@ export const SettingsScreen: React.FC = () => {
             </TouchableOpacity>
           </View>
         </View>
+
+        {/* アプリ情報 */}
+        <View style={styles.appInfo}>
+          <Text style={styles.appInfoText}>Health Manager</Text>
+          <Text style={styles.appVersionText}>Version 1.0.0</Text>
+        </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -169,25 +206,37 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    padding: spacing.md,
+    paddingHorizontal: spacing.xl,
   },
   header: {
-    marginBottom: spacing.lg,
+    marginBottom: spacing.xl,
   },
   backButton: {
-    marginBottom: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  backButtonContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  backArrow: {
+    fontSize: 28,
+    color: colors.primary,
+    marginRight: spacing.xs,
+    fontWeight: typography.weights.medium as '500',
   },
   backButtonText: {
     fontSize: typography.sizes.md,
     color: colors.primary,
+    fontWeight: typography.weights.medium as '500',
   },
   title: {
-    fontSize: typography.sizes['2xl'],
+    fontSize: typography.sizes['3xl'],
     fontWeight: typography.weights.bold as '700',
     color: colors.text.primary,
+    letterSpacing: -0.5,
   },
   section: {
-    marginBottom: spacing.lg,
+    marginBottom: spacing.xl,
   },
   sectionTitle: {
     fontSize: typography.sizes.sm,
@@ -200,35 +249,39 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: colors.surface,
-    borderRadius: 12,
+    borderRadius: borderRadius['2xl'],
     overflow: 'hidden',
-    shadowColor: colors.black,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    ...shadows.md,
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: spacing.md,
-    minHeight: 56,
+    padding: spacing.lg,
+    minHeight: 64,
   },
   menuItemContent: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
   },
+  iconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: borderRadius.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: spacing.md,
+  },
   menuItemIcon: {
     fontSize: 20,
-    marginRight: spacing.md,
   },
   menuItemTextContainer: {
     flex: 1,
   },
   menuItemTitle: {
     fontSize: typography.sizes.md,
+    fontWeight: typography.weights.medium as '500',
     color: colors.text.primary,
   },
   menuItemSubtitle: {
@@ -237,7 +290,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   arrow: {
-    fontSize: typography.sizes.xl,
+    fontSize: typography.sizes['2xl'],
     color: colors.gray[400],
     marginLeft: spacing.sm,
   },
@@ -245,35 +298,66 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: spacing.md,
-    minHeight: 56,
+    padding: spacing.lg,
+    minHeight: 60,
   },
   languageItemActive: {
-    backgroundColor: colors.primaryLight,
+    backgroundColor: colors.primaryMuted,
+  },
+  languageContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  languageFlag: {
+    fontSize: 24,
+    marginRight: spacing.md,
   },
   languageText: {
     fontSize: typography.sizes.md,
     color: colors.text.primary,
   },
   languageTextActive: {
-    color: colors.primary,
+    color: colors.primaryDark,
     fontWeight: typography.weights.semibold as '600',
   },
+  checkmarkContainer: {
+    width: 28,
+    height: 28,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   checkmark: {
-    fontSize: typography.sizes.lg,
-    color: colors.primary,
+    fontSize: typography.sizes.md,
+    color: colors.white,
     fontWeight: typography.weights.bold as '700',
   },
   divider: {
     height: 1,
     backgroundColor: colors.gray[200],
-    marginLeft: spacing.md,
+    marginLeft: spacing.lg,
   },
   dangerItem: {
     // スタイルは必要に応じて追加
   },
   dangerText: {
     color: colors.error,
+  },
+  appInfo: {
+    alignItems: 'center',
+    marginTop: spacing.xl,
+    marginBottom: spacing.lg,
+  },
+  appInfoText: {
+    fontSize: typography.sizes.md,
+    fontWeight: typography.weights.semibold as '600',
+    color: colors.text.secondary,
+  },
+  appVersionText: {
+    fontSize: typography.sizes.sm,
+    color: colors.text.tertiary,
+    marginTop: spacing.xs,
   },
 });
 
