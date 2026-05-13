@@ -1,6 +1,7 @@
 /**
  * 新規登録画面
  * Design: Wellness Serenity
+ * 仕様: email(1つ) + password1 + password2 + nickname
  */
 import React, { useState } from 'react';
 import {
@@ -40,15 +41,16 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
   const { t } = useTranslation();
   const insets = useSafeAreaInsets();
 
-  // アカウント1（メインアカウント）情報
-  const [account1Email, setAccount1Email] = useState('');
-  const [account1Password, setAccount1Password] = useState('');
-  const [account1PasswordConfirm, setAccount1PasswordConfirm] = useState('');
+  // メールアドレス（単一）
+  const [email, setEmail] = useState('');
 
-  // アカウント2（サブアカウント）情報
-  const [account2Email, setAccount2Email] = useState('');
-  const [account2Password, setAccount2Password] = useState('');
-  const [account2PasswordConfirm, setAccount2PasswordConfirm] = useState('');
+  // パスワード1（本物のメッセージ用）
+  const [password1, setPassword1] = useState('');
+  const [password1Confirm, setPassword1Confirm] = useState('');
+
+  // パスワード2（ダミーメッセージ用）
+  const [password2, setPassword2] = useState('');
+  const [password2Confirm, setPassword2Confirm] = useState('');
 
   // ニックネーム
   const [nickname, setNickname] = useState('');
@@ -60,46 +62,37 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    // アカウント1メール
-    if (!account1Email.trim()) {
-      newErrors.account1Email = t('validation.emailRequired');
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(account1Email)) {
-      newErrors.account1Email = t('validation.emailInvalid');
+    // メールアドレス
+    if (!email.trim()) {
+      newErrors.email = t('validation.emailRequired');
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      newErrors.email = t('validation.emailInvalid');
     }
 
-    // アカウント1パスワード
-    if (!account1Password) {
-      newErrors.account1Password = t('validation.passwordRequired');
-    } else if (account1Password.length < 8) {
-      newErrors.account1Password = t('validation.passwordMinLength');
+    // パスワード1
+    if (!password1) {
+      newErrors.password1 = t('validation.passwordRequired');
+    } else if (password1.length < 8) {
+      newErrors.password1 = t('validation.passwordMinLength');
     }
 
-    // アカウント1パスワード確認
-    if (account1Password !== account1PasswordConfirm) {
-      newErrors.account1PasswordConfirm = t('validation.passwordMismatch');
+    // パスワード1確認
+    if (password1 !== password1Confirm) {
+      newErrors.password1Confirm = t('validation.passwordMismatch');
     }
 
-    // アカウント2メール
-    if (!account2Email.trim()) {
-      newErrors.account2Email = t('validation.account2EmailRequired');
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(account2Email)) {
-      newErrors.account2Email = t('validation.emailInvalid');
-    } else if (account2Email === account1Email) {
-      newErrors.account2Email = t('validation.account2EmailSameAsAccount1');
+    // パスワード2
+    if (!password2) {
+      newErrors.password2 = t('validation.password2Required');
+    } else if (password2.length < 8) {
+      newErrors.password2 = t('validation.passwordMinLength');
+    } else if (password2 === password1) {
+      newErrors.password2 = t('validation.password2SameAsPassword1');
     }
 
-    // アカウント2パスワード
-    if (!account2Password) {
-      newErrors.account2Password = t('validation.account2PasswordRequired');
-    } else if (account2Password.length < 8) {
-      newErrors.account2Password = t('validation.passwordMinLength');
-    } else if (account2Password === account1Password) {
-      newErrors.account2Password = t('validation.account2PasswordSameAsAccount1');
-    }
-
-    // アカウント2パスワード確認
-    if (account2Password !== account2PasswordConfirm) {
-      newErrors.account2PasswordConfirm = t('validation.account2PasswordMismatch');
+    // パスワード2確認
+    if (password2 !== password2Confirm) {
+      newErrors.password2Confirm = t('validation.password2Mismatch');
     }
 
     setErrors(newErrors);
@@ -115,10 +108,9 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
 
     try {
       const result = await registerUser({
-        realEmail: account1Email,
-        realPassword: account1Password,
-        dummyEmail: account2Email,
-        dummyPassword: account2Password,
+        email: email,
+        password1: password1,
+        password2: password2,
         nickname: nickname || undefined,
       });
 
@@ -136,10 +128,16 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
           [{ text: 'OK', onPress: handleSuccess }]
         );
       } else {
-        Alert.alert(t('auth.registerFailed'), result.error || t('common.error'));
+        // デバッグ用: エラー詳細を表示
+        Alert.alert(
+          t('auth.registerFailed'),
+          `Error: ${result.error || t('common.error')}\n\nEmail: ${email}`,
+        );
       }
-    } catch {
-      Alert.alert(t('common.error'), t('auth.registerError'));
+    } catch (err) {
+      // デバッグ用: 例外の詳細を表示
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      Alert.alert(t('common.error'), `Exception: ${errorMsg}`);
     } finally {
       setIsLoading(false);
     }
@@ -165,19 +163,19 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
             <Text style={styles.logoIcon}>🔐</Text>
           </View>
           <Text style={styles.title}>{t('auth.registerTitle')}</Text>
-          <Text style={styles.subtitle}>{t('auth.registerSubtitle')}</Text>
+          <Text style={styles.subtitle}>{t('auth.registerSubtitleNew')}</Text>
         </View>
 
-        {/* アカウント1（メインアカウント） */}
+        {/* メールアドレス */}
         <View style={styles.formCard}>
           <View style={styles.sectionHeader}>
             <View style={[styles.sectionBadge, { backgroundColor: colors.primaryMuted }]}>
-              <Text style={[styles.sectionBadgeText, { color: colors.primaryDark }]}>1</Text>
+              <Text style={[styles.sectionBadgeText, { color: colors.primaryDark }]}>📧</Text>
             </View>
             <View style={styles.sectionTitleContainer}>
-              <Text style={styles.sectionTitle}>{t('auth.account1')}</Text>
+              <Text style={styles.sectionTitle}>{t('auth.email')}</Text>
               <Text style={styles.sectionDescription}>
-                {t('auth.account1Desc')}
+                {t('auth.emailDesc')}
               </Text>
             </View>
           </View>
@@ -185,85 +183,87 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
           <View style={styles.inputContainer}>
             <Input
               label={t('auth.email')}
-              value={account1Email}
-              onChangeText={setAccount1Email}
+              value={email}
+              onChangeText={setEmail}
               placeholder={t('placeholder.email')}
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
-              error={errors.account1Email}
-            />
-          </View>
-
-          <View style={styles.inputContainer}>
-            <Input
-              label={t('auth.password')}
-              value={account1Password}
-              onChangeText={setAccount1Password}
-              placeholder={t('placeholder.passwordMinLength')}
-              secureTextEntry
-              error={errors.account1Password}
-            />
-          </View>
-
-          <View style={styles.inputContainer}>
-            <Input
-              label={t('auth.passwordConfirm')}
-              value={account1PasswordConfirm}
-              onChangeText={setAccount1PasswordConfirm}
-              placeholder={t('placeholder.passwordConfirm')}
-              secureTextEntry
-              error={errors.account1PasswordConfirm}
+              error={errors.email}
             />
           </View>
         </View>
 
-        {/* アカウント2（サブアカウント） */}
+        {/* パスワード1（メインパスワード） */}
         <View style={styles.formCard}>
           <View style={styles.sectionHeader}>
-            <View style={[styles.sectionBadge, { backgroundColor: '#FEF3C7' }]}>
-              <Text style={[styles.sectionBadgeText, { color: '#B45309' }]}>2</Text>
+            <View style={[styles.sectionBadge, { backgroundColor: colors.primaryMuted }]}>
+              <Text style={[styles.sectionBadgeText, { color: colors.primaryDark }]}>1</Text>
             </View>
             <View style={styles.sectionTitleContainer}>
-              <Text style={styles.sectionTitle}>{t('auth.account2')}</Text>
+              <Text style={styles.sectionTitle}>{t('auth.password1')}</Text>
               <Text style={styles.sectionDescription}>
-                {t('auth.account2Desc')}
+                {t('auth.password1Desc')}
               </Text>
             </View>
           </View>
 
           <View style={styles.inputContainer}>
             <Input
-              label={t('auth.account2Email')}
-              value={account2Email}
-              onChangeText={setAccount2Email}
-              placeholder={t('placeholder.account2Email')}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-              error={errors.account2Email}
-            />
-          </View>
-
-          <View style={styles.inputContainer}>
-            <Input
-              label={t('auth.account2Password')}
-              value={account2Password}
-              onChangeText={setAccount2Password}
-              placeholder={t('placeholder.account2Password')}
+              label={t('auth.password')}
+              value={password1}
+              onChangeText={setPassword1}
+              placeholder={t('placeholder.passwordMinLength')}
               secureTextEntry
-              error={errors.account2Password}
+              error={errors.password1}
             />
           </View>
 
           <View style={styles.inputContainer}>
             <Input
-              label={t('auth.account2PasswordConfirm')}
-              value={account2PasswordConfirm}
-              onChangeText={setAccount2PasswordConfirm}
+              label={t('auth.passwordConfirm')}
+              value={password1Confirm}
+              onChangeText={setPassword1Confirm}
               placeholder={t('placeholder.passwordConfirm')}
               secureTextEntry
-              error={errors.account2PasswordConfirm}
+              error={errors.password1Confirm}
+            />
+          </View>
+        </View>
+
+        {/* パスワード2（ダミーパスワード） */}
+        <View style={styles.formCard}>
+          <View style={styles.sectionHeader}>
+            <View style={[styles.sectionBadge, { backgroundColor: '#FEF3C7' }]}>
+              <Text style={[styles.sectionBadgeText, { color: '#B45309' }]}>2</Text>
+            </View>
+            <View style={styles.sectionTitleContainer}>
+              <Text style={styles.sectionTitle}>{t('auth.password2')}</Text>
+              <Text style={styles.sectionDescription}>
+                {t('auth.password2Desc')}
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.inputContainer}>
+            <Input
+              label={t('auth.password')}
+              value={password2}
+              onChangeText={setPassword2}
+              placeholder={t('placeholder.password2')}
+              secureTextEntry
+              error={errors.password2}
+            />
+          </View>
+
+          <View style={styles.inputContainer}>
+            <Input
+              label={t('auth.passwordConfirm')}
+              value={password2Confirm}
+              onChangeText={setPassword2Confirm}
+              placeholder={t('placeholder.passwordConfirm')}
+              secureTextEntry
+              error={errors.password2Confirm}
             />
           </View>
         </View>

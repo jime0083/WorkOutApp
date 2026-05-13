@@ -15,9 +15,12 @@ import {
 import {
   doc,
   getDoc,
+  setDoc,
+  serverTimestamp,
 } from 'firebase/firestore';
 import { getAuthInstance, getFirestoreInstance } from './firebase';
 import type { User, CreateUserInput } from '../types/user';
+import { verifyPassword, hashPassword } from '../types/user';
 
 // 認証結果型
 export interface AuthResult {
@@ -34,7 +37,7 @@ export interface LoginResult extends AuthResult {
 
 /**
  * メールアドレスでログイン
- * ダミーメールと本命メールの両方を試行し、どちらでログインしたかを返す
+ * email + password1 でFirebase認証を行う
  */
 export async function loginWithEmail(
   email: string,
@@ -42,29 +45,14 @@ export async function loginWithEmail(
 ): Promise<LoginResult> {
   try {
     const auth = getAuthInstance();
-    const db = getFirestoreInstance();
 
-    // まず入力されたメールアドレスでログインを試行
+    // メールアドレス + パスワード1 でログイン
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
-
-    // ユーザードキュメントを取得してダミーかどうか判定
-    const userDoc = await getDoc(doc(db, 'users', userCredential.user.uid));
-
-    if (!userDoc.exists()) {
-      return {
-        success: false,
-        error: 'User document not found',
-        isDummyLogin: false,
-      };
-    }
-
-    const userData = userDoc.data() as User;
-    const isDummyLogin = userData.dummyEmail === email;
 
     return {
       success: true,
       user: userCredential.user,
-      isDummyLogin,
+      isDummyLogin: false,  // ログイン時は常にパスワード1（本物）
     };
   } catch (error) {
     return {
@@ -76,25 +64,72 @@ export async function loginWithEmail(
 }
 
 /**
+ * ランダムな表示用ユーザーIDを生成
+ */
+function generateVisibleUserId(): string {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let result = '';
+  for (let i = 0; i < 8; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+}
+
+/**
  * 新規ユーザー登録
- * ダミーアカウントと本命アカウントを両方作成
+ * email + password1 でFirebase Auth アカウントを作成
+ * password2はハッシュ化してFirestoreに保存
  */
 export async function registerUser(input: CreateUserInput): Promise<AuthResult> {
   try {
     const auth = getAuthInstance();
+    const db = getFirestoreInstance();
 
-    // 本命アカウントを作成
+    console.log('[AUTH] Starting registration for:', input.email);
+
+    // メールアドレス + パスワード1 でFirebase Authアカウントを作成
+    console.log('[AUTH] Creating Firebase Auth account...');
     const userCredential = await createUserWithEmailAndPassword(
       auth,
-      input.realEmail,
-      input.realPassword
+      input.email,
+      input.password1
     );
+    console.log('[AUTH] Firebase Auth account created, UID:', userCredential.user.uid);
+
+    // パスワード2をハッシュ化
+    const password2Hash = hashPassword(input.password2);
+    console.log('[AUTH] Password2 hashed');
+
+    // ユーザードキュメントを作成
+    console.log('[AUTH] Creating Firestore user document...');
+    const userDocRef = doc(db, 'users', userCredential.user.uid);
+    await setDoc(userDocRef, {
+      id: userCredential.user.uid,
+      email: input.email,
+      password2Hash: password2Hash,
+      visibleUserId: generateVisibleUserId(),
+      nickname: input.nickname || '',
+      profileImageUrl: null,
+      subscriptionStatus: 'free',
+      subscriptionPlan: null,
+      subscriptionExpiry: null,
+      monthlyMessageCount: 0,
+      messageCountResetDate: new Date(),
+      fcmToken: null,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+      lastLoginAt: serverTimestamp(),
+    });
+    console.log('[AUTH] Firestore user document created successfully');
 
     return {
       success: true,
       user: userCredential.user,
     };
   } catch (error) {
+    console.error('[AUTH] Registration error:', error);
+    console.error('[AUTH] Error message:', error instanceof Error ? error.message : 'Unknown');
+    console.error('[AUTH] Error code:', (error as { code?: string })?.code);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Registration failed',
@@ -160,8 +195,9 @@ export async function getUserDocument(userId: string): Promise<User | null> {
 }
 
 /**
- * 認証情報を検証（サインインせずに認証タイプを判定）
- * 既にログイン中のユーザーの本物/ダミー認証情報を検証
+ * 認証情報を検証（パスワードのみで認証タイプを判定）
+ * パスワード1: Firebase Auth再認証で検証 → 'real'
+ * パスワード2: Firestoreのpassword2Hashと比較 → 'dummy'
  */
 export interface VerifyResult {
   success: boolean;
@@ -170,14 +206,13 @@ export interface VerifyResult {
 }
 
 export async function verifyUserCredentials(
-  email: string,
   password: string
 ): Promise<VerifyResult> {
   const auth = getAuthInstance();
   const db = getFirestoreInstance();
   const currentUser = auth.currentUser;
 
-  if (!currentUser) {
+  if (!currentUser || !currentUser.email) {
     return {
       success: false,
       authType: null,
@@ -199,45 +234,34 @@ export async function verifyUserCredentials(
 
     const userData = userDoc.data() as User;
 
-    // 本物のメールアドレスで認証を試行
-    if (email === userData.realEmail || email === currentUser.email) {
-      try {
-        const credential = EmailAuthProvider.credential(email, password);
-        await reauthenticateWithCredential(currentUser, credential);
+    // まずパスワード2（ダミー）のハッシュと比較
+    // パスワード2がFirestoreに保存されている場合
+    if (userData.password2Hash) {
+      const isPassword2 = verifyPassword(password, userData.password2Hash);
+      if (isPassword2) {
         return {
           success: true,
-          authType: 'real',
+          authType: 'dummy',
         };
-      } catch {
-        // 本物の認証に失敗
       }
     }
 
-    // ダミーのメールアドレスで認証を試行
-    if (email === userData.dummyEmail) {
-      try {
-        const dummyCredential = await signInWithEmailAndPassword(auth, email, password);
-        if (dummyCredential.user.uid === currentUser.uid) {
-          return {
-            success: true,
-            authType: 'dummy',
-          };
-        }
-        await signOut(auth);
-        return {
-          success: false,
-          authType: null,
-          error: 'Invalid credentials',
-        };
-      } catch {
-        // ダミー認証に失敗
-      }
+    // パスワード1（本物）で再認証を試行
+    try {
+      const credential = EmailAuthProvider.credential(currentUser.email, password);
+      await reauthenticateWithCredential(currentUser, credential);
+      return {
+        success: true,
+        authType: 'real',
+      };
+    } catch {
+      // パスワード1の認証にも失敗
     }
 
     return {
       success: false,
       authType: null,
-      error: 'Invalid email or password',
+      error: 'Invalid password',
     };
   } catch (error) {
     return {

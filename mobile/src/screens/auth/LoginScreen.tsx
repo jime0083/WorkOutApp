@@ -118,7 +118,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
         {/* ログインフォーム */}
         <View style={styles.formCard}>
           <View style={styles.noteContainer}>
-            <Text style={styles.loginNote}>{t('auth.loginNote')}</Text>
+            <Text style={styles.loginNote}>{t('auth.loginNotePassword1')}</Text>
           </View>
 
           <View style={styles.inputContainer}>

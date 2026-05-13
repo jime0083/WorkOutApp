@@ -23,7 +23,10 @@
       "WebSearch",
       "WebFetch(domain:github.com)",
       "Bash(grep:*)",
-      "Skill(example-skills:frontend-design)"
+      "Skill(example-skills:frontend-design)",
+      "Bash(firebase deploy:*)",
+      "Bash(npx react-native start)",
+      "Bash(xcrun simctl spawn:*)"
     ]
   }
 }

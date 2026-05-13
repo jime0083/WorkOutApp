@@ -1,6 +1,7 @@
 /**
  * PasswordPromptScreen - パスワード入力画面
  * 設定画面/メッセージ画面へのアクセス時に認証を行う
+ * 仕様: パスワードのみ入力（メールアドレス不要）
  * Design: Wellness Serenity
  */
 import React, { useState, useCallback } from 'react';
@@ -40,9 +41,7 @@ export const PasswordPromptScreen: React.FC = () => {
   const { purpose } = route.params;
   const insets = useSafeAreaInsets();
 
-  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -51,25 +50,15 @@ export const PasswordPromptScreen: React.FC = () => {
   const { userDocument } = useAuthStore();
 
   const validateForm = useCallback((): boolean => {
-    let isValid = true;
-    setEmailError('');
     setPasswordError('');
-
-    if (!email.trim()) {
-      setEmailError(t('validation.emailRequired'));
-      isValid = false;
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setEmailError(t('validation.emailInvalid'));
-      isValid = false;
-    }
 
     if (!password) {
       setPasswordError(t('validation.passwordRequired'));
-      isValid = false;
+      return false;
     }
 
-    return isValid;
-  }, [email, password, t]);
+    return true;
+  }, [password, t]);
 
   const handleVerify = useCallback(async () => {
     setError('');
@@ -81,7 +70,8 @@ export const PasswordPromptScreen: React.FC = () => {
     setIsLoading(true);
 
     try {
-      const result = await verifyUserCredentials(email, password);
+      // パスワードのみで認証（メールアドレス不要）
+      const result = await verifyUserCredentials(password);
 
       if (result.success && result.authType) {
         if (purpose === 'settings') {
@@ -156,7 +146,6 @@ export const PasswordPromptScreen: React.FC = () => {
       setIsLoading(false);
     }
   }, [
-    email,
     password,
     purpose,
     validateForm,
@@ -180,6 +169,12 @@ export const PasswordPromptScreen: React.FC = () => {
 
   const getIcon = () => {
     return purpose === 'settings' ? '⚙️' : '💬';
+  };
+
+  const getSubtitle = () => {
+    return purpose === 'settings'
+      ? t('auth.enterPasswordForSettings')
+      : t('auth.enterPasswordForMessages');
   };
 
   return (
@@ -208,24 +203,11 @@ export const PasswordPromptScreen: React.FC = () => {
           </View>
           <Text style={styles.title}>{getTitle()}</Text>
           <Text style={styles.subtitle}>
-            {t('auth.loginSubtitle')}
+            {getSubtitle()}
           </Text>
         </View>
 
         <View style={styles.formCard}>
-          <View style={styles.inputContainer}>
-            <Input
-              label={t('auth.email')}
-              value={email}
-              onChangeText={setEmail}
-              placeholder={t('placeholder.email')}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-              error={emailError}
-            />
-          </View>
-
           <View style={styles.inputContainer}>
             <Input
               label={t('auth.password')}
@@ -250,7 +232,7 @@ export const PasswordPromptScreen: React.FC = () => {
             activeOpacity={0.8}
           >
             <Text style={styles.verifyButtonText}>
-              {isLoading ? t('common.loading') : t('auth.login')}
+              {isLoading ? t('common.loading') : t('common.confirm')}
             </Text>
           </TouchableOpacity>
 

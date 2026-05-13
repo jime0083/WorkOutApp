@@ -6,14 +6,14 @@ import { getAuth, Auth } from 'firebase/auth';
 import { getFirestore, Firestore } from 'firebase/firestore';
 import { getFunctions, Functions } from 'firebase/functions';
 
-// Firebase設定
+// Firebase設定（GoogleService-Info.plistと同期）
 const firebaseConfig = {
-  apiKey: 'AIzaSyBSVoJYRvGiGCwR4qT7WZX2JMZA8DRXNxc',
+  apiKey: 'AIzaSyBeL5b6cRdQhabUVjC21Kpprl8SM2e_stk',
   authDomain: 'workoutapp-72355.firebaseapp.com',
   projectId: 'workoutapp-72355',
-  storageBucket: 'workoutapp-72355.appspot.com',
-  messagingSenderId: '1055988089508',
-  appId: '1:1055988089508:ios:a1b2c3d4e5f6g7h8',
+  storageBucket: 'workoutapp-72355.firebasestorage.app',
+  messagingSenderId: '1029420388528',
+  appId: '1:1029420388528:ios:4b71893a9e1d0465a96b75',
 };
 
 // プロジェクト情報

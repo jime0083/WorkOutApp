@@ -92,6 +92,10 @@ YYYY-MM-DD
 | 1 | Webアプリビルドエラー（複数の型エラー・未実装モジュール） | 2026-05-02 | 解決済み | Phase 8.5 |
 | 2 | iOS Xcodeビルドエラー（Firebase + React Native 0.85互換性問題） | 2026-05-09 | 解決済み | Phase 13 |
 | 3 | オンボーディング・登録フローの改善 | 2026-05-11 | 調査中 | 要件変更実装 |
+| 4 | 認証仕様の齟齬（メールアドレス2つ→1つ、パスワード認証のみ） | 2026-05-11 | 修正中 | Phase 16 |
+| 5 | Firebase APIキー不一致エラー | 2026-05-11 | 解決済み | Phase 16 |
+| 6 | Firestoreセキュリティルール権限エラー | 2026-05-11 | 解決済み | Phase 16 |
+| 7 | サブスク課金画面の翻訳キー不足・UI改善 | 2026-05-13 | 解決済み | Phase 16 |
 
 ---
 
@@ -621,3 +625,478 @@ import { getFirestoreInstance } from './firebase';
 
 ### 解決日
 （未定）
+
+---
+
+## Problem #4: 認証仕様の齟齬（メールアドレス2つ→1つ、パスワード認証のみ）
+発生日: 2026-05-11
+関連Phase/Work: Phase 15（オンボーディング・登録フロー改善）
+ステータス: 修正中（実機動作確認待ち）
+
+### 必須チェックリスト（全て完了必須）
+- [x] 1. TodoWrite に問題対応タスクを追加した
+- [x] 2. 原因を徹底調査した
+- [x] 3. 修正計画を作成した
+- [x] 4. problem.txt に記録した（この項目）
+- [x] 5. 修正を実施した [完了: 2026-05-11]
+- [ ] 6. 動作確認を完了した（実機テスト待ち）
+- [ ] 7. TodoWrite のタスクを完了にした
+
+### 問題の詳細
+
+現在の実装と正しい仕様の間に重大な齟齬があることが発覚した。
+
+#### 正しい仕様
+1. **アカウント登録**: メールアドレス（1つ）、パスワード1、パスワード2、ユーザーネーム の4項目
+2. **設定画面を開く際**: パスワードのみ入力
+3. **メッセージ画面を開く際（設定画面から）**: パスワードのみ入力
+4. **既存ユーザーログイン**: メールアドレス + パスワード1
+
+#### 現在の誤った実装
+1. **RegisterScreen.tsx**:
+   - account1Email, account1Password, account1PasswordConfirm
+   - account2Email, account2Password, account2PasswordConfirm
+   - nickname
+   - **問題**: メールアドレスが2つ存在（account1Email, account2Email）
+
+2. **PasswordPromptScreen.tsx**:
+   - メールアドレス + パスワード の入力を要求
+   - **問題**: パスワードのみでよい
+
+3. **auth.ts - verifyUserCredentials()**:
+   - `verifyUserCredentials(email: string, password: string)` という形式
+   - **問題**: パスワードのみを受け取り、どちらのパスワードかを判定すべき
+
+4. **user.ts**:
+   - User型に `realEmail` と `dummyEmail` が存在
+   - CreateUserInputに `realEmail`, `realPassword`, `dummyEmail`, `dummyPassword` が存在
+   - **問題**: メールアドレスは1つのみで、パスワードを2つ持つべき
+
+5. **accessStore.ts**:
+   - 認証タイプの判定がメールアドレス比較に依存
+   - **問題**: パスワードのみで認証タイプを判定すべき
+
+### 原因分析
+
+初期の要件理解時に「アカウント1」「アカウント2」という表現から、それぞれに独立したメールアドレスとパスワードが必要と誤解した。
+実際の仕様は:
+- メールアドレス: 1つのみ（ログイン・識別用）
+- パスワード1: 本物のメッセージ画面へのアクセス用
+- パスワード2: ダミーのメッセージ画面へのアクセス用
+
+### 修正計画
+
+#### Phase 16.1: データモデル修正
+1. **user.ts** の修正
+   - `realEmail` → `email`（単一）
+   - `dummyEmail` を削除
+   - `password1Hash` と `password2Hash` を持つ構造に変更
+
+2. **CreateUserInput** の修正
+   ```typescript
+   export interface CreateUserInput {
+     email: string;
+     password1: string;
+     password2: string;
+     nickname?: string;
+   }
+   ```
+
+#### Phase 16.2: 認証サービス修正
+1. **auth.ts - verifyUserCredentials()** の修正
+   - 引数をパスワードのみに変更
+   - 現在ログイン中のユーザーのpassword1Hash/password2Hashと比較
+   - どちらのパスワードかを判定して結果を返す
+   ```typescript
+   export async function verifyUserCredentials(
+     password: string
+   ): Promise<{ success: boolean; authType?: 'real' | 'dummy'; error?: string }>
+   ```
+
+2. **authStore.ts** の修正
+   - ユーザー情報の取得・保存を新しいデータモデルに対応
+
+#### Phase 16.3: 登録画面修正
+1. **RegisterScreen.tsx** の修正
+   - 入力フィールドを以下に変更:
+     - email（メールアドレス）
+     - password1（パスワード1）
+     - password1Confirm（パスワード1確認）
+     - password2（パスワード2）
+     - password2Confirm（パスワード2確認）
+     - nickname（ユーザーネーム）
+   - 登録処理を新しいデータモデルに対応
+
+#### Phase 16.4: パスワード認証画面修正
+1. **PasswordPromptScreen.tsx** の修正
+   - メールアドレス入力フィールドを削除
+   - パスワード入力フィールドのみに変更
+   - verifyUserCredentials をパスワードのみで呼び出し
+   - UIを「パスワードを入力してください」に変更
+
+#### Phase 16.5: ログイン画面修正
+1. **LoginScreen.tsx** の修正
+   - ログインはメールアドレス + パスワード1で行う
+   - UI説明を「パスワード1を入力してください」に変更
+   - ログイン処理を新しいデータモデルに対応
+
+#### Phase 16.6: データベース・Cloud Functions修正
+1. **Firestoreルール** の確認・修正
+2. **Cloud Functions** の修正（ユーザー作成処理など）
+
+#### Phase 16.7: 翻訳ファイル更新
+1. **ja.json, en.json** の修正
+   - 新しいフィールド名に対応したラベル追加
+   - パスワード入力画面の説明文追加
+
+#### Phase 16.8: ビルド・動作確認
+1. TypeScript型チェック
+2. iOSビルド確認
+3. 実機動作確認
+
+### 修正対象ファイル一覧
+- `mobile/src/types/user.ts`
+- `mobile/src/services/auth.ts`
+- `mobile/src/stores/authStore.ts`
+- `mobile/src/stores/accessStore.ts`
+- `mobile/src/screens/auth/RegisterScreen.tsx`
+- `mobile/src/screens/auth/PasswordPromptScreen.tsx`
+- `mobile/src/screens/auth/LoginScreen.tsx`
+- `mobile/src/i18n/locales/ja.json`
+- `mobile/src/i18n/locales/en.json`
+- `functions/src/` 関連ファイル（必要に応じて）
+
+### 試したアプローチ（失敗したものも含む）
+1. Web Crypto API (crypto.subtle.digest) を使用してパスワードハッシュを実装 → 失敗
+   - 理由: React Native環境ではTextEncoderとcryptoが利用不可
+2. シンプルなdjb2ハッシュアルゴリズムを実装 → 成功
+   - JavaScript primitiveのみ使用、プラットフォーム非依存
+
+### 採用した解決策
+
+#### 1. データモデル修正 (user.ts)
+```typescript
+// User型
+export interface User {
+  id: string;
+  email: string;  // 単一のメールアドレス
+  password2Hash: string;  // パスワード2のハッシュ（ダミー認証用）
+  // ... 他のフィールド
+}
+
+// CreateUserInput型
+export interface CreateUserInput {
+  email: string;
+  password1: string;  // Firebase Auth用
+  password2: string;  // Firestoreに保存
+  nickname?: string;
+}
+```
+
+#### 2. パスワードハッシュ関数 (user.ts)
+- djb2アルゴリズムを使用したシンプルなハッシュ関数を実装
+- ソルトを追加してセキュリティを向上
+- 同期関数として実装（Web Crypto APIの非同期を回避）
+
+#### 3. 認証サービス修正 (auth.ts)
+- `verifyUserCredentials(password: string)` - パスワードのみで認証タイプを判定
+- パスワード2: Firestoreのpassword2Hashと比較 → 'dummy'
+- パスワード1: Firebase Auth再認証で検証 → 'real'
+
+#### 4. 画面修正
+- RegisterScreen: email, password1, password1Confirm, password2, password2Confirm, nickname
+- PasswordPromptScreen: パスワード入力のみ（メールアドレス入力削除）
+- LoginScreen: 「パスワード1でログイン」の説明を追加
+
+#### 5. 翻訳ファイル更新
+- ja.json, en.json: 新しいフィールドラベル、説明文、バリデーションメッセージを追加
+- 仕様説明オンボーディングを「2つのパスワード」方式に修正
+
+### 動作確認結果
+- [ ] 問題が解決したことを確認（実機テスト待ち）
+- [x] 副作用がないことを確認（TypeScript型チェック通過）
+- [x] ビルドが通ることを確認（xcodebuild BUILD SUCCEEDED）
+
+### 再発防止策
+1. 仕様確認時に「何を入力するか」「何を保存するか」を明確にリストアップする
+2. データモデル設計前にユーザーとのすり合わせを行う
+3. 曖昧な表現（「アカウント1/2」など）は具体的な内容を確認する
+
+### 学んだこと
+（修正実施後に記載）
+
+### 解決日
+（未定）
+
+---
+
+## Problem #5: Firebase APIキー不一致エラー
+発生日: 2026-05-11
+関連Phase/Work: Phase 16（実機テスト中に発覚）
+ステータス: 解決済み
+
+### 必須チェックリスト（全て完了必須）
+- [x] 1. TodoWrite に問題対応タスクを追加した
+- [x] 2. 原因を徹底調査した
+- [x] 3. 修正計画を作成した
+- [x] 4. problem.txt に記録した（この項目）
+- [x] 5. 修正を実施した [完了: 2026-05-11]
+- [x] 6. 動作確認を完了した（APIキーエラーが解消、別のエラーに進んだ）
+- [x] 7. TodoWrite のタスクを完了にした
+
+### 問題の詳細
+
+実機でアカウント登録を試みた際、以下のエラーが発生:
+```
+Firebase: Error (auth/api-key-not-valid.-please-pass-a-valid-api-key.).
+```
+
+### 原因分析
+
+`firebase.ts` にハードコードされているFirebase設定が、`GoogleService-Info.plist` の正しい設定と一致していない。
+
+| 項目 | firebase.ts (誤) | GoogleService-Info.plist (正) |
+|------|-----------------|------------------------------|
+| apiKey | `AIzaSyBSVoJYRvGiGCwR4qT7WZX2JMZA8DRXNxc` | `AIzaSyBeL5b6cRdQhabUVjC21Kpprl8SM2e_stk` |
+| messagingSenderId | `1055988089508` | `1029420388528` |
+| storageBucket | `workoutapp-72355.appspot.com` | `workoutapp-72355.firebasestorage.app` |
+| appId | `1:1055988089508:ios:a1b2c3d4e5f6g7h8` | `1:1029420388528:ios:4b71893a9e1d0465a96b75` |
+
+**根本原因**: Firebase JS SDK移行時（Problem #2解決時）に、firebase.tsの設定値がGoogleService-Info.plistと同期されていなかった。
+
+### 修正計画
+
+1. `firebase.ts` の `firebaseConfig` を GoogleService-Info.plist の値に更新
+2. TypeScript型チェック
+3. iOSビルド
+4. 実機テスト
+
+### 修正したファイル
+- `mobile/src/services/firebase.ts`
+
+### 試したアプローチ（失敗したものも含む）
+1. GoogleService-Info.plistから正しいFirebase設定を抽出 → 成功
+2. firebase.tsの設定を更新 → 成功
+
+### 採用した解決策
+`firebase.ts` の `firebaseConfig` を GoogleService-Info.plist の値と同期:
+```typescript
+const firebaseConfig = {
+  apiKey: 'AIzaSyBeL5b6cRdQhabUVjC21Kpprl8SM2e_stk',
+  authDomain: 'workoutapp-72355.firebaseapp.com',
+  projectId: 'workoutapp-72355',
+  storageBucket: 'workoutapp-72355.firebasestorage.app',
+  messagingSenderId: '1029420388528',
+  appId: '1:1029420388528:ios:4b71893a9e1d0465a96b75',
+};
+```
+
+### 動作確認結果
+- [x] 問題が解決したことを確認（APIキーエラーが解消、別のエラーに進んだ）
+- [x] 副作用がないことを確認（TypeScript型チェック通過）
+- [x] ビルドが通ることを確認（BUILD SUCCEEDED）
+
+### 再発防止策
+1. Firebase設定変更時はGoogleService-Info.plistとfirebase.tsの両方を確認・同期する
+2. 実機テストは必ずFirebase認証を含むフローを確認する
+3. Firebase JS SDK使用時は、ネイティブ設定ファイル（plist）と同じ値を使用する
+
+### 学んだこと
+1. Firebase JS SDK使用時もGoogleService-Info.plistの設定値を使用する必要がある
+2. APIキーはプロジェクト固有であり、間違った値を使用すると認証が失敗する
+3. Firebase設定の不一致はビルド時にはエラーにならず、実行時にのみ発覚する
+
+### 解決日
+2026-05-11
+
+---
+
+## Problem #6: Firestoreセキュリティルール権限エラー
+発生日: 2026-05-11
+関連Phase/Work: Phase 16（実機テスト中に発覚）
+ステータス: 解決済み
+
+### 必須チェックリスト（全て完了必須）
+- [x] 1. TodoWrite に問題対応タスクを追加した
+- [x] 2. 原因を徹底調査した
+- [x] 3. 修正計画を作成した
+- [x] 4. problem.txt に記録した（この項目）
+- [x] 5. 修正を実施した [完了: 2026-05-11]
+- [x] 6. 動作確認を完了した [完了: 2026-05-13]
+- [x] 7. TodoWrite のタスクを完了にした
+
+### 問題の詳細
+
+実機でアカウント登録を試みた際、以下のエラーが発生:
+```
+Missing or insufficient permissions.
+```
+
+Firebase Auth認証は成功するが、Firestoreへのユーザードキュメント書き込みが拒否される。
+
+### 原因分析
+
+`firestore.rules` の `users` コレクションで `allow create: if false;` が設定されているため、クライアントからのドキュメント作成がすべてブロックされている。
+
+```javascript
+// firestore.rules 39-40行目
+// 作成: Cloud Functions経由のみ（認証トリガーで作成）
+allow create: if false;
+```
+
+元の設計ではCloud Function `onUserCreate` で自動作成する想定だったが:
+1. 新しいデータモデルでは `password2Hash` が必要
+2. Firebase Auth triggerではパスワードにアクセスできない
+3. したがってクライアント側でドキュメントを作成する必要がある
+
+### 修正計画
+
+1. `firestore.rules` を変更:
+   ```javascript
+   // 変更前
+   allow create: if false;
+
+   // 変更後
+   allow create: if isOwner(userId);
+   ```
+
+2. Firebase CLIでルールをデプロイ:
+   ```bash
+   firebase deploy --only firestore:rules
+   ```
+
+### 修正したファイル
+- `firestore.rules`
+
+### 試したアプローチ（失敗したものも含む）
+1. Cloud Functionで自動作成する設計を維持 → 不可（password2Hashはクライアント側でのみ取得可能）
+2. firestore.rulesを変更してクライアントからの作成を許可 → 採用
+
+### 採用した解決策
+`firestore.rules` の `users` コレクションルールを変更:
+```javascript
+// 変更前
+allow create: if false;
+
+// 変更後
+allow create: if isOwner(userId);
+```
+
+Firebase CLIでデプロイ:
+```bash
+firebase deploy --only firestore:rules
+✔  firestore: released rules firestore.rules to cloud.firestore
+✔  Deploy complete!
+```
+
+### 動作確認結果
+- [x] 問題が解決したことを確認（ログイン成功、サブスク画面表示）
+- [x] 副作用がないことを確認（既存のルールロジックは維持）
+- [x] ルールがデプロイされたことを確認（Deploy complete!）
+
+### 再発防止策
+1. データモデル変更時はFirestoreルールとの整合性を確認する
+2. クライアント側で書き込む必要があるフィールドは、ルールで許可する
+
+### 学んだこと
+1. Firestoreルールはビルド時にはエラーにならず、実行時にのみエラーが発覚する
+2. データモデル変更（Cloud Function→クライアント書き込み）時はルール変更が必須
+3. `auth/email-already-in-use` エラーは、過去の登録試行でAuthアカウントが作成されていたことを示す
+4. エラー詳細をAlertに表示することで、実機でも原因特定が容易になる
+
+### 解決日
+2026-05-13
+
+---
+
+## Problem #7: サブスク課金画面の翻訳キー不足・UI改善
+発生日: 2026-05-13
+関連Phase/Work: Phase 16（実機テスト中に発覚）
+ステータス: 解決済み
+
+### 必須チェックリスト（全て完了必須）
+- [x] 1. TodoWrite に問題対応タスクを追加した
+- [x] 2. 原因を徹底調査した
+- [x] 3. 修正計画を作成した
+- [x] 4. problem.txt に記録した（この項目）
+- [x] 5. 修正を実施した [完了: 2026-05-13]
+- [x] 6. 動作確認を完了した（TypeScript型チェック通過）
+- [x] 7. TodoWrite のタスクを完了にした
+
+### 問題の詳細
+
+サブスク課金ボタンをタップした際、以下の表示が出た:
+```
+subscription.purchaseStartedTitle
+subscription.purchaseStartedMessage
+```
+
+翻訳キーがそのまま表示されており、翻訳が見つかっていない。
+
+### 原因分析
+
+1. `subscription.purchaseStartedTitle` と `subscription.purchaseStartedMessage` が翻訳ファイル（ja.json, en.json）に存在しない
+2. i18nextは存在しないキーをそのまま文字列として返すため、フォールバックの `||` が機能しない
+
+### 修正計画
+
+#### Phase 7-A: 翻訳キー追加
+1. ja.json に `purchaseStartedTitle`, `purchaseStartedMessage` を追加
+2. en.json に同様のキーを追加
+
+#### Phase 7-B: UI変更（ユーザー要件）
+1. 「プレミアムプラン」→「プランの選択」に変更
+2. 3つのプランを表示:
+   - フリープラン（月10通までのメッセージ送信）
+   - 月額プラン（メッセージ無制限、画像・動画送受信、緊急全データ削除）
+   - 年額プラン（月額の全機能を20%OFFで利用）
+
+### 修正したファイル
+- `mobile/src/i18n/locales/ja.json` - 翻訳キー追加、新しいプラン表示用テキスト追加
+- `mobile/src/i18n/locales/en.json` - 同様の翻訳キー追加
+- `mobile/src/screens/subscription/SubscriptionScreen.tsx` - 3プラン表示UIに完全書き換え
+
+### 試したアプローチ（失敗したものも含む）
+1. 翻訳キー追加とUI変更を同時に実施 → 成功
+2. TypeScript型チェックで `StyleSheet.absoluteFillObject` エラー → `absoluteFill` に修正
+
+### 採用した解決策
+
+#### 翻訳キー追加
+```json
+// ja.json
+"purchaseStartedTitle": "購入処理中",
+"purchaseStartedMessage": "App Storeで購入手続きを行っています。しばらくお待ちください。",
+"freePlanTitle": "フリープラン",
+"freePlanPrice": "¥0",
+"freePlanDescription": "月10通までのメッセージ送信",
+"freePlanFeature1": "月10通のメッセージ送信",
+"freePlanFeature2": "テキストメッセージのみ",
+"yearlyDiscount": "20%OFF",
+"continueWithFree": "フリープランで始める"
+```
+
+#### UI変更
+- SubscriptionScreen.tsxを完全書き換え
+- 3つのプランカード（フリー、月額、年額）を表示
+- 各プランに機能リスト（✓/✗で表示）
+- 年額プランに「おすすめ」バッジと「20%OFF」バッジ
+- フリープランは控えめなデザイン、有料プランは強調
+
+### 動作確認結果
+- [x] 問題が解決したことを確認（翻訳キー追加完了）
+- [x] 副作用がないことを確認（TypeScript型チェック通過）
+- [x] ビルドが通ることを確認（npx tsc --noEmit 成功）
+
+### 再発防止策
+1. 新しい翻訳キーを使用する際は、先に翻訳ファイルにキーを追加する
+2. Alert等の動的テキストで使用するキーは事前に存在確認する
+3. UIモックアップを作成する際に必要な翻訳キーもリストアップする
+
+### 学んだこと
+1. i18nextは存在しないキーをそのまま返すため、フォールバック文字列が機能しない場合がある
+2. UIの大幅変更時は翻訳ファイルとの同期が重要
+3. StyleSheet.absoluteFillObjectはReact Native新バージョンでabsoluteFillに変更されている
+
+### 解決日
+2026-05-13

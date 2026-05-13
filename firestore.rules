@@ -36,8 +36,8 @@ service cloud.firestore {
       // 読み取り: 認証済みユーザーのみ（友達検索用にvisibleUserIdでの検索を許可）
       allow read: if isAuthenticated();
 
-      // 作成: Cloud Functions経由のみ（認証トリガーで作成）
-      allow create: if false;
+      // 作成: 自分自身のドキュメントのみ作成可能
+      allow create: if isOwner(userId);
 
       // 更新: 自分自身のみ、かつ変更可能フィールドのみ
       allow update: if isOwner(userId) &&

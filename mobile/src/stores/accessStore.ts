@@ -47,17 +47,17 @@ export const useAccessStore = create<AccessState>((set, get) => ({
   determineAction: (isPremium: boolean): ActionType => {
     const { settingsAuth, messagesAuth } = get();
 
-    // 両方で本物のアドレス/パスワード → 本物のメッセージ画面
+    // 両方でパスワード1 → 本物のメッセージ画面
     if (settingsAuth === 'real' && messagesAuth === 'real') {
       return 'showRealMessages';
     }
 
-    // 両方でダミーのアドレス/パスワード → ダミーのメッセージ画面
+    // 両方でパスワード2 → ダミーのメッセージ画面
     if (settingsAuth === 'dummy' && messagesAuth === 'dummy') {
       return 'showDummyMessages';
     }
 
-    // 設定で本物、メッセージでダミー → 全メッセージ削除（サブスク限定）
+    // 設定でパスワード1、メッセージでパスワード2 → 全メッセージ削除（サブスク限定）
     if (settingsAuth === 'real' && messagesAuth === 'dummy') {
       if (isPremium) {
         return 'deleteAllMessages';
