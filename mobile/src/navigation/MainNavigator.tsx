@@ -21,6 +21,7 @@ import {
   ConversationScreen,
 } from '../screens/messages';
 import { SubscriptionScreen } from '../screens/subscription';
+import { NotificationPermissionScreen } from '../screens/notification/NotificationPermissionScreen';
 
 const Stack = createNativeStackNavigator<MainStackParamList>();
 const Tab = createBottomTabNavigator<DummyTabParamList>();
@@ -95,6 +96,11 @@ export const MainNavigator: React.FC = () => {
       <Stack.Screen name="Messages" component={MessagesScreen} />
       <Stack.Screen name="DummyMessages" component={DummyMessagesScreen} />
       <Stack.Screen name="Conversation" component={ConversationScreen} />
+      <Stack.Screen
+        name="NotificationPermission"
+        component={NotificationPermissionScreen}
+        options={{ presentation: 'modal' }}
+      />
     </Stack.Navigator>
   );
 };

@@ -16,7 +16,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
 import { colors, typography, spacing } from '../theme';
 import type { MainStackParamList } from '../navigation/types';
-import { subscribeToUnreadCount } from '../services/unreadCount';
+import { subscribeToUnreadCountWithBadge } from '../services/unreadCount';
 import { useAuthStore } from '../stores/authStore';
 
 type NavigationProp = NativeStackNavigationProp<MainStackParamList>;
@@ -26,18 +26,18 @@ export const HeaderMenu: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const [isMenuVisible, setIsMenuVisible] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
-  const user = useAuthStore((state) => state.user);
+  const userDocument = useAuthStore((state) => state.userDocument);
 
-  // 未読件数をリアルタイムで監視
+  // 未読件数をリアルタイムで監視（アプリアイコンバッジも自動更新）
   useEffect(() => {
-    if (!user?.id) return;
+    if (!userDocument?.id) return;
 
-    const unsubscribe = subscribeToUnreadCount(user.id, (count) => {
+    const unsubscribe = subscribeToUnreadCountWithBadge(userDocument.id, (count) => {
       setUnreadCount(count);
     });
 
     return () => unsubscribe();
-  }, [user?.id]);
+  }, [userDocument?.id]);
 
   const openMenu = useCallback(() => {
     setIsMenuVisible(true);

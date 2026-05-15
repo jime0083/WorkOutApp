@@ -3,7 +3,7 @@
  * Apple Health風のフィットネスダッシュボード
  * Design: Wellness Serenity
  */
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   View,
   ScrollView,
@@ -13,7 +13,10 @@ import {
   StatusBar,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { colors, typography, spacing, borderRadius, shadows } from '../../theme';
 import {
   StepCounter,
@@ -27,7 +30,13 @@ import {
   sleepData,
 } from '../../data/dummyData';
 import { HeaderMenu } from '../../components/HeaderMenu';
+import { getNotificationPermissionStatus } from '../../services/notification';
+import type { MainStackParamList } from '../../navigation/types';
 import '../../i18n';
+
+type NavigationProp = NativeStackNavigationProp<MainStackParamList>;
+
+const NOTIFICATION_PERMISSION_ASKED_KEY = '@notification_permission_asked';
 
 interface DummyHomeScreenProps {
   navigation?: unknown;
@@ -35,8 +44,43 @@ interface DummyHomeScreenProps {
 
 export const DummyHomeScreen: React.FC<DummyHomeScreenProps> = () => {
   const { t, i18n } = useTranslation();
+  const navigation = useNavigation<NavigationProp>();
   const insets = useSafeAreaInsets();
   const locale = i18n.language === 'ja' ? 'ja-JP' : 'en-US';
+  const hasCheckedPermission = useRef(false);
+
+  // 通知権限のチェックと初回リクエスト
+  useEffect(() => {
+    const checkNotificationPermission = async () => {
+      // 既にチェック済みの場合はスキップ
+      if (hasCheckedPermission.current) return;
+      hasCheckedPermission.current = true;
+
+      try {
+        // 以前に権限をリクエストしたか確認
+        const hasAsked = await AsyncStorage.getItem(NOTIFICATION_PERMISSION_ASKED_KEY);
+        if (hasAsked) return;
+
+        // 現在の権限ステータスを確認
+        const status = await getNotificationPermissionStatus();
+
+        // まだ決定されていない場合、権限リクエスト画面を表示
+        if (status === 'not_determined') {
+          // 少し遅延させてから表示（画面遷移のタイミング調整）
+          setTimeout(() => {
+            navigation.navigate('NotificationPermission');
+          }, 500);
+        }
+
+        // リクエスト済みとしてマーク
+        await AsyncStorage.setItem(NOTIFICATION_PERMISSION_ASKED_KEY, 'true');
+      } catch (error) {
+        console.error('Failed to check notification permission:', error);
+      }
+    };
+
+    checkNotificationPermission();
+  }, [navigation]);
 
   return (
     <View style={styles.container}>

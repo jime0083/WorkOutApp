@@ -3,10 +3,16 @@
 ## 手動作業タスク一覧
 
 ### Work 1: 通知権限設定（iOS）
-ステータス: 未着手
-優先度: 高
+ステータス: 部分完了
+優先度: 中
 
-#### 必要な作業
+#### 完了した作業（AI実装）
+- notifee ライブラリをインストール
+- 通知権限リクエスト画面（NotificationPermissionScreen）を実装
+- アプリアイコンバッジ機能を実装
+- 初回起動時の権限リクエストフローを実装
+
+#### 残りの作業（プッシュ通知を有効にする場合のみ必要）
 1. Xcode でプロジェクトを開く
 2. Capabilities で Push Notifications を有効化
 3. Background Modes で Remote notifications を有効化
@@ -18,8 +24,9 @@
 - ios/WorkOutAppMobile/Info.plist
 
 #### 備考
-- バッジ表示には通知権限が必要
-- 開発用・本番用両方の証明書が必要
+- バッジ表示は notifee で実装済み（通知権限が必要）
+- プッシュ通知は現在 Firebase JS SDK の制限により未実装
+- 将来的にプッシュ通知を実装する場合は上記の手動作業が必要
 
 ---
 

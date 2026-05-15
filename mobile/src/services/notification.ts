@@ -1,12 +1,13 @@
 /**
- * 通知サービス（一時的なスタブ実装）
+ * 通知サービス
  *
  * NOTE: Firebase JS SDKはモバイルプッシュ通知をサポートしていません。
- * 将来的にExpo Push Notifications、OneSignal、または
- * react-native-firebase互換性が解決された後に実装を追加してください。
+ * プッシュ通知は将来的にExpo Push Notifications、OneSignal等で実装予定。
+ * 現在はnotifeeを使用してバッジと通知権限のみ対応。
  */
-// import { Alert, Platform } from 'react-native'; // 未使用（スタブ実装のため）
+import { Platform } from 'react-native';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import notifee, { AuthorizationStatus } from '@notifee/react-native';
 import { getFirestoreInstance } from './firebase';
 
 // 通知データ型
@@ -28,12 +29,119 @@ export type NotificationCallback = (data: NotificationData) => void;
 let _onNotificationCallback: NotificationCallback | null = null;
 
 /**
+ * 通知権限のステータス
+ */
+export type NotificationPermissionStatus =
+  | 'granted'        // 許可済み
+  | 'denied'         // 拒否済み
+  | 'not_determined' // 未決定
+  | 'provisional';   // 仮許可（iOS）
+
+/**
  * 通知権限をリクエスト
- * NOTE: 現在は常にtrueを返す（スタブ）
+ * バッジ表示のために必要
  */
 export async function requestNotificationPermission(): Promise<boolean> {
-  console.log('Push notifications are currently disabled (Firebase JS SDK limitation)');
-  return true;
+  try {
+    const settings = await notifee.requestPermission({
+      sound: true,
+      badge: true,
+      alert: true,
+    });
+
+    const granted =
+      settings.authorizationStatus === AuthorizationStatus.AUTHORIZED ||
+      settings.authorizationStatus === AuthorizationStatus.PROVISIONAL;
+
+    if (__DEV__) {
+      console.log('[Notification] Permission request result:', granted);
+    }
+
+    return granted;
+  } catch (error) {
+    console.error('[Notification] Permission request failed:', error);
+    return false;
+  }
+}
+
+/**
+ * 現在の通知権限ステータスを取得
+ */
+export async function getNotificationPermissionStatus(): Promise<NotificationPermissionStatus> {
+  try {
+    const settings = await notifee.getNotificationSettings();
+
+    switch (settings.authorizationStatus) {
+      case AuthorizationStatus.AUTHORIZED:
+        return 'granted';
+      case AuthorizationStatus.DENIED:
+        return 'denied';
+      case AuthorizationStatus.PROVISIONAL:
+        return 'provisional';
+      case AuthorizationStatus.NOT_DETERMINED:
+      default:
+        return 'not_determined';
+    }
+  } catch (error) {
+    console.error('[Notification] Failed to get permission status:', error);
+    return 'not_determined';
+  }
+}
+
+/**
+ * 通知権限が許可されているか確認
+ */
+export async function hasNotificationPermission(): Promise<boolean> {
+  const status = await getNotificationPermissionStatus();
+  return status === 'granted' || status === 'provisional';
+}
+
+/**
+ * アプリアイコンバッジを設定
+ * @param count バッジに表示する件数（0で非表示）
+ */
+export async function setAppBadgeCount(count: number): Promise<void> {
+  try {
+    const hasPermission = await hasNotificationPermission();
+    if (!hasPermission) {
+      if (__DEV__) {
+        console.log('[Notification] No permission for badge');
+      }
+      return;
+    }
+
+    await notifee.setBadgeCount(count);
+
+    if (__DEV__) {
+      console.log(`[Notification] Badge count set to: ${count}`);
+    }
+  } catch (error) {
+    console.error('[Notification] Failed to set badge count:', error);
+  }
+}
+
+/**
+ * アプリアイコンバッジをクリア
+ */
+export async function clearAppBadge(): Promise<void> {
+  await setAppBadgeCount(0);
+}
+
+/**
+ * 通知チャンネルを作成（Android用）
+ */
+export async function createNotificationChannel(): Promise<void> {
+  if (Platform.OS !== 'android') return;
+
+  try {
+    await notifee.createChannel({
+      id: 'default',
+      name: 'Default Channel',
+      importance: 4, // HIGH
+    });
+  } catch (error) {
+    console.error('[Notification] Failed to create channel:', error);
+  }
 }
 
 /**
@@ -157,14 +265,17 @@ export function getActualNotificationContent(data: NotificationData): {
 
 /**
  * 通知サービスを初期化
- * NOTE: 現在はプッシュ通知は無効化されています
+ * NOTE: プッシュ通知は無効化されていますが、バッジ機能は有効です
  */
 export async function initializeNotifications(
   _userId: string,
   _onNotificationTap: NotificationCallback
 ): Promise<void> {
+  // 通知チャンネルを作成（Android）
+  await createNotificationChannel();
+
   console.log('Push notifications are disabled (Firebase JS SDK limitation)');
-  console.log('Consider using Expo Push Notifications or OneSignal for push notifications');
+  console.log('Badge functionality is enabled via notifee');
 }
 
 /**

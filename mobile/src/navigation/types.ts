@@ -41,4 +41,5 @@ export type MainStackParamList = {
   Profile: undefined;
   Subscription: undefined;
   AccountSettings: undefined;
+  NotificationPermission: undefined;
 };

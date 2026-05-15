@@ -352,7 +352,7 @@ export const SubscriptionScreen: React.FC = () => {
           ))}
         </View>
 
-        {{/* 注意事項 */}
+        {/* 注意事項 */}
         <Text style={styles.disclaimer}>{t('subscription.disclaimer')}</Text>
 
         {/* サブスクリプション解除 */}
