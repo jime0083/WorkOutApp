@@ -6,18 +6,11 @@ import { getAuth, Auth } from 'firebase/auth';
 import { getFirestore, Firestore } from 'firebase/firestore';
 import { getFunctions, Functions } from 'firebase/functions';
 
-// Firebase設定（GoogleService-Info.plistと同期）
-const firebaseConfig = {
-  apiKey: 'AIzaSyBeL5b6cRdQhabUVjC21Kpprl8SM2e_stk',
-  authDomain: 'workoutapp-72355.firebaseapp.com',
-  projectId: 'workoutapp-72355',
-  storageBucket: 'workoutapp-72355.firebasestorage.app',
-  messagingSenderId: '1029420388528',
-  appId: '1:1029420388528:ios:4b71893a9e1d0465a96b75',
-};
+// Firebase設定（ローカル設定ファイルから読み込み）
+import { firebaseConfig, FIREBASE_PROJECT_ID as PROJECT_ID } from '../config';
 
-// プロジェクト情報
-export const FIREBASE_PROJECT_ID = 'workoutapp-72355';
+// プロジェクト情報を再エクスポート
+export const FIREBASE_PROJECT_ID = PROJECT_ID;
 
 let app: FirebaseApp | null = null;
 let auth: Auth | null = null;

@@ -53,6 +53,10 @@ mobile/ios/GoogleService-Info.plist
 mobile/android/app/google-services.json
 web/src/config/firebase.config.ts
 
+# Local config files with secrets (never commit)
+mobile/src/config/firebase.config.local.ts
+*.local.ts
+
 # IDE
 .idea/
 .vscode/
