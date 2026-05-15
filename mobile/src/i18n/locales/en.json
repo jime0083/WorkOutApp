@@ -19,6 +19,10 @@
     "edit": "Edit",
     "settings": "Settings"
   },
+  "menu": {
+    "update": "Updates",
+    "changePlan": "Change Plan"
+  },
   "nav": {
     "talk": "Chat",
     "friends": "Friends",
@@ -59,6 +63,7 @@
     "enterNickname": "Enter display name",
     "registerButton": "Sign Up",
     "accountCreated": "Account created. Please login.",
+    "accountCreatedSelectPlan": "Account created. Please select a plan.",
     "registerFailed": "Registration failed",
     "registerError": "An error occurred during registration"
   },
@@ -107,7 +112,12 @@
     "sendRequest": "Send Friend Request",
     "requestSent": "Friend request sent",
     "yourId": "Your ID",
-    "shareIdHint": "Share this ID with your friends to get added"
+    "shareIdHint": "Share this ID with your friends to get added",
+    "yourInviteCode": "Your Invite Code",
+    "shareCodeHint": "Share this code with friends to add you",
+    "enterInviteCode": "Enter Invite Code",
+    "inviteCodePlaceholder": "Enter 8-character code",
+    "alreadyFriend": "Already friends"
   },
   "profile": {
     "userId": "User ID",
@@ -186,6 +196,7 @@
     "messageDelete": "Delete Messages",
     "panicButton": "Emergency Delete Button",
     "purchase": "Purchase",
+    "startWithThisPlan": "Start with this plan",
     "purchasing": "Processing...",
     "restore": "Restore Purchases",
     "restoring": "Restoring...",
@@ -200,7 +211,9 @@
     "cancelNote": "Manage subscriptions in App Store settings",
     "termsOfUse": "Terms of Use",
     "privacyPolicy": "Privacy Policy",
-    "subscriptionNote": "Subscription will be charged to your Apple account at confirmation. It will auto-renew unless canceled at least 24 hours before the end of the current period."
+    "subscriptionNote": "Subscription will be charged to your Apple account at confirmation. It will auto-renew unless canceled at least 24 hours before the end of the current period.",
+    "cancelSubscriptionButton": "Cancel Subscription",
+    "cancelSubscriptionDesc": "Manage subscription cancellation in App Store settings"
   },
   "settings": {
     "title": "Settings",
@@ -208,6 +221,7 @@
     "japanese": "Japanese",
     "english": "English",
     "account": "Account",
+    "selectPlan": "Select Plan",
     "deleteAccount": "Delete Account",
     "panicButton": "Emergency Data Deletion",
     "panicButtonDesc": "Immediately delete all data"
@@ -219,7 +233,15 @@
     "noSent": "No sent friend requests",
     "accept": "Accept",
     "reject": "Reject",
-    "pending": "Pending"
+    "pending": "Pending",
+    "newRequest": "Friend request received",
+    "requestFromUser": "{{name}} sent you a friend request",
+    "acceptFriend": "Accept Friend",
+    "blockUser": "Block",
+    "accepted": "Friend request accepted",
+    "blockConfirm": "Block Confirmation",
+    "blockConfirmMessage": "Block this user? The conversation will be deleted.",
+    "acceptToChat": "Accept friend request to start chatting"
   },
   "blocked": {
     "empty": "No blocked users",
@@ -229,6 +251,7 @@
   },
   "chat": {
     "noMessages": "No messages",
+    "yesterday": "Yesterday",
     "imageMessage": "Image",
     "videoMessage": "Video",
     "unknownUser": "Unknown User",

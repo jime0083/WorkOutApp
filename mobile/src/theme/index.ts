@@ -101,6 +101,22 @@ export const colors = {
   // オーバーレイ
   overlay: 'rgba(28, 25, 23, 0.5)',
   overlayLight: 'rgba(28, 25, 23, 0.3)',
+
+  // LINE風ダークテーマ
+  lineDark: {
+    background: '#121212',
+    surface: '#1E1E1E',
+    surfaceElevated: '#2A2A2A',
+    header: '#1A1A1A',
+    border: '#333333',
+    green: '#06C755',
+    greenLight: '#08E065',
+    textPrimary: '#FFFFFF',
+    textSecondary: '#8E8E93',
+    textTertiary: '#636366',
+    searchBg: '#2C2C2E',
+    unreadBadge: '#06C755',
+  },
 } as const;
 
 // タイポグラフィ

@@ -20,10 +20,10 @@ import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { getFunctionsInstance, getFirestoreInstance } from './firebase';
 import type { PlanType } from '../types/subscription';
 
-// 商品ID
+// 商品ID（App Store Connectと一致させること）
 export const PRODUCT_IDS = {
-  monthly: 'com.workoutapp.subscription.monthly',
-  yearly: 'com.workoutapp.subscription.yearly',
+  monthly: 'com.okiroya.workoutapp.subscription.monthly',
+  yearly: 'com.okiroya.workoutapp.subscription.yearly',
 };
 
 // 全商品ID配列
@@ -115,13 +115,16 @@ export function setupPurchaseListeners(
  */
 export async function getSubscriptionProducts(): Promise<ProductInfo[]> {
   try {
+    console.log('[IAP Service] Fetching products with SKUs:', ALL_PRODUCT_IDS);
     const products = await fetchProducts({ skus: ALL_PRODUCT_IDS, type: 'subs' });
+    console.log('[IAP Service] Raw products from store:', JSON.stringify(products, null, 2));
 
     if (!products || products.length === 0) {
+      console.warn('[IAP Service] No products returned from store');
       return [];
     }
 
-    return products.map((product) => ({
+    const mappedProducts = products.map((product) => ({
       productId: product.id,
       title: product.title,
       description: product.description,
@@ -129,8 +132,10 @@ export async function getSubscriptionProducts(): Promise<ProductInfo[]> {
       currency: product.currency,
       planType: (product.id === PRODUCT_IDS.monthly ? 'monthly' : 'yearly') as 'monthly' | 'yearly',
     }));
+    console.log('[IAP Service] Mapped products:', JSON.stringify(mappedProducts, null, 2));
+    return mappedProducts;
   } catch (error) {
-    console.error('Failed to fetch products:', error);
+    console.error('[IAP Service] Failed to fetch products:', error);
     throw error;
   }
 }
@@ -140,15 +145,25 @@ export async function getSubscriptionProducts(): Promise<ProductInfo[]> {
  */
 export async function purchaseSubscription(productId: string): Promise<void> {
   try {
+    console.log('[IAP Service] Initiating purchase for:', productId);
+    console.log('[IAP Service] Purchase request params:', JSON.stringify({
+      request: {
+        apple: { sku: productId },
+      },
+      type: 'subs',
+    }, null, 2));
+
     await requestPurchase({
       request: {
         apple: { sku: productId },
       },
       type: 'subs',
     });
+    console.log('[IAP Service] Purchase request completed (waiting for listener)');
     // 購入結果は purchaseUpdatedListener で受け取る
   } catch (error) {
-    console.error('Failed to initiate purchase:', error);
+    console.error('[IAP Service] Failed to initiate purchase:', error);
+    console.error('[IAP Service] Error details:', JSON.stringify(error, null, 2));
     throw error;
   }
 }

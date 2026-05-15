@@ -20,9 +20,13 @@ import { colors, typography, spacing, borderRadius, shadows } from '../../theme'
 import type { MainStackParamList } from '../../navigation/types';
 import {
   initializeIAP,
+  terminateIAP,
   getSubscriptionProducts,
   purchaseSubscription,
+  setupPurchaseListeners,
+  processPurchase,
 } from '../../services/subscription';
+import { openSubscriptionManagement } from '../../services/unreadCount';
 
 type NavigationProp = NativeStackNavigationProp<MainStackParamList>;
 
@@ -48,29 +52,107 @@ export const SubscriptionScreen: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [monthlyPrice, setMonthlyPrice] = useState('¥500');
-  const [yearlyPrice, setYearlyPrice] = useState('¥4,800');
+  const [yearlyPrice, setYearlyPrice] = useState('¥5,000');
 
   useEffect(() => {
     loadProducts();
-  }, []);
+
+    // 購入リスナーを設定
+    console.log('[IAP] Setting up purchase listeners...');
+    setupPurchaseListeners(
+      // 購入成功時
+      async (purchase) => {
+        console.log('[IAP] Purchase received:', JSON.stringify(purchase, null, 2));
+        setIsPurchasing(true);
+        try {
+          console.log('[IAP] Processing purchase...');
+          const result = await processPurchase(purchase);
+          console.log('[IAP] Process purchase result:', JSON.stringify(result, null, 2));
+          if (result.success) {
+            Alert.alert(
+              t('subscription.purchaseSuccessTitle'),
+              t('subscription.purchaseSuccessMessage'),
+              [
+                {
+                  text: 'OK',
+                  onPress: () => navigation.replace('DummyTabs'),
+                },
+              ]
+            );
+          } else {
+            Alert.alert(
+              t('subscription.purchaseErrorTitle'),
+              `${result.error || t('subscription.purchaseErrorMessage')}\n\nDebug: processPurchase failed`
+            );
+          }
+        } catch (error: unknown) {
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          console.error('[IAP] Purchase processing error:', errorMessage);
+          Alert.alert(
+            t('subscription.purchaseErrorTitle'),
+            `${t('subscription.purchaseErrorMessage')}\n\nDebug: ${errorMessage}`
+          );
+        } finally {
+          setIsPurchasing(false);
+        }
+      },
+      // 購入エラー時
+      (error) => {
+        console.error('[IAP] Purchase error from listener:', {
+          code: error.code,
+          message: error.message,
+          fullError: JSON.stringify(error, null, 2),
+        });
+        setIsPurchasing(false);
+        // ユーザーがキャンセルした場合はアラートを表示しない
+        const errorCode = String(error.code);
+        console.log('[IAP] Error code string:', errorCode);
+        if (!errorCode.includes('CANCEL') && !errorCode.includes('Cancel')) {
+          Alert.alert(
+            t('subscription.purchaseErrorTitle'),
+            `${t('subscription.purchaseErrorMessage')}\n\nDebug: code=${error.code}, msg=${error.message}`
+          );
+        } else {
+          console.log('[IAP] User cancelled purchase, not showing alert');
+        }
+      }
+    );
+    console.log('[IAP] Purchase listeners set up');
+
+    // クリーンアップ
+    return () => {
+      terminateIAP();
+    };
+  }, [navigation, t]);
 
   const loadProducts = async () => {
+    console.log('[IAP] loadProducts called');
     try {
-      await initializeIAP();
+      console.log('[IAP] Initializing IAP connection...');
+      const initResult = await initializeIAP();
+      console.log('[IAP] IAP initialized:', initResult);
+
+      console.log('[IAP] Fetching subscription products...');
       const products = await getSubscriptionProducts();
+      console.log('[IAP] Products fetched:', JSON.stringify(products, null, 2));
 
       if (products && products.length > 0) {
         products.forEach((product) => {
+          console.log('[IAP] Processing product:', product.productId, product.price);
           if (product.productId?.includes('monthly') && product.price) {
             setMonthlyPrice(product.price);
           } else if (product.productId?.includes('yearly') && product.price) {
             setYearlyPrice(product.price);
           }
         });
+      } else {
+        console.warn('[IAP] No products found! Check App Store Connect configuration.');
       }
-    } catch (error) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error('[IAP] Failed to load products:', errorMessage);
+      console.error('[IAP] Full error:', JSON.stringify(error, null, 2));
       // フォールバック価格を使用
-      console.log('Failed to load products, using fallback prices');
     } finally {
       setIsLoading(false);
     }
@@ -129,29 +211,34 @@ export const SubscriptionScreen: React.FC = () => {
       return;
     }
 
+    console.log('[IAP] handleSelectPlan called for:', plan.type);
     setIsPurchasing(true);
     try {
       const productId = plan.type === 'yearly'
-        ? 'com.workoutapp.subscription.yearly'
-        : 'com.workoutapp.subscription.monthly';
+        ? 'com.okiroya.workoutapp.subscription.yearly'
+        : 'com.okiroya.workoutapp.subscription.monthly';
 
-      // 購入リクエストを開始
+      console.log('[IAP] Requesting purchase for productId:', productId);
+      // 購入リクエストを開始（結果は purchaseUpdatedListener で受け取る）
       await purchaseSubscription(productId);
-
-      Alert.alert(
-        t('subscription.purchaseStartedTitle'),
-        t('subscription.purchaseStartedMessage'),
-        [{ text: 'OK' }]
-      );
-    } catch (error) {
-      console.error('Purchase error:', error);
+      console.log('[IAP] Purchase request sent successfully');
+      // 購入ダイアログが表示されるので、ここでは何もしない
+      // 購入結果は setupPurchaseListeners で設定したコールバックで処理される
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorObj = error as { code?: string; message?: string };
+      console.error('[IAP] Purchase request error:', {
+        message: errorMessage,
+        code: errorObj?.code,
+        fullError: JSON.stringify(error, null, 2),
+      });
+      setIsPurchasing(false);
       Alert.alert(
         t('subscription.purchaseErrorTitle'),
-        t('subscription.purchaseErrorMessage')
+        `${t('subscription.purchaseErrorMessage')}\n\nDebug: ${errorMessage}`
       );
-    } finally {
-      setIsPurchasing(false);
     }
+    // 注意: setIsPurchasing(false) は購入リスナーのコールバックで行う
   };
 
   if (isLoading) {
@@ -247,17 +334,17 @@ export const SubscriptionScreen: React.FC = () => {
               {/* 選択ボタン */}
               <View style={[
                 styles.selectButton,
-                plan.isRecommended && styles.selectButtonRecommended,
+                (plan.type === 'monthly' || plan.type === 'yearly') && styles.selectButtonPaid,
                 plan.type === 'free' && styles.selectButtonFree,
               ]}>
                 <Text style={[
                   styles.selectButtonText,
-                  plan.isRecommended && styles.selectButtonTextRecommended,
+                  (plan.type === 'monthly' || plan.type === 'yearly') && styles.selectButtonTextPaid,
                   plan.type === 'free' && styles.selectButtonTextFree,
                 ]}>
                   {plan.type === 'free'
                     ? t('subscription.continueWithFree')
-                    : t('subscription.purchase')
+                    : t('subscription.startWithThisPlan')
                   }
                 </Text>
               </View>
@@ -265,8 +352,22 @@ export const SubscriptionScreen: React.FC = () => {
           ))}
         </View>
 
-        {/* 注意事項 */}
+        {{/* 注意事項 */}
         <Text style={styles.disclaimer}>{t('subscription.disclaimer')}</Text>
+
+        {/* サブスクリプション解除 */}
+        <TouchableOpacity
+          style={styles.cancelSubscriptionButton}
+          onPress={openSubscriptionManagement}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.cancelSubscriptionText}>
+            {t('subscription.cancelSubscriptionButton')}
+          </Text>
+          <Text style={styles.cancelSubscriptionDesc}>
+            {t('subscription.cancelSubscriptionDesc')}
+          </Text>
+        </TouchableOpacity>
       </ScrollView>
 
       {isPurchasing && (
@@ -420,7 +521,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     alignItems: 'center',
   },
-  selectButtonRecommended: {
+  selectButtonPaid: {
     backgroundColor: colors.primary,
   },
   selectButtonFree: {
@@ -433,7 +534,7 @@ const styles = StyleSheet.create({
     fontWeight: typography.weights.semibold as '600',
     color: colors.text.primary,
   },
-  selectButtonTextRecommended: {
+  selectButtonTextPaid: {
     color: colors.white,
   },
   selectButtonTextFree: {
@@ -456,6 +557,26 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontSize: typography.sizes.md,
     marginTop: spacing.md,
+  },
+  cancelSubscriptionButton: {
+    marginTop: spacing.xl,
+    padding: spacing.lg,
+    backgroundColor: colors.gray[50],
+    borderRadius: borderRadius.xl,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.gray[200],
+  },
+  cancelSubscriptionText: {
+    fontSize: typography.sizes.md,
+    fontWeight: typography.weights.medium as '500',
+    color: colors.text.secondary,
+    marginBottom: spacing.xs,
+  },
+  cancelSubscriptionDesc: {
+    fontSize: typography.sizes.sm,
+    color: colors.text.tertiary,
+    textAlign: 'center',
   },
 });
 

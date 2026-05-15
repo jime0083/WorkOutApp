@@ -76,6 +76,18 @@ function generateVisibleUserId(): string {
 }
 
 /**
+ * ランダムな招待コードを生成（8文字の英数字）
+ */
+function generateInviteCode(): string {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // 紛らわしい文字(0,O,1,I)を除外
+  let result = '';
+  for (let i = 0; i < 8; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+}
+
+/**
  * 新規ユーザー登録
  * email + password1 でFirebase Auth アカウントを作成
  * password2はハッシュ化してFirestoreに保存
@@ -108,6 +120,7 @@ export async function registerUser(input: CreateUserInput): Promise<AuthResult> 
       email: input.email,
       password2Hash: password2Hash,
       visibleUserId: generateVisibleUserId(),
+      inviteCode: generateInviteCode(),
       nickname: input.nickname || '',
       profileImageUrl: null,
       subscriptionStatus: 'free',

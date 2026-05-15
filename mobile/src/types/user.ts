@@ -17,6 +17,7 @@ export interface User {
 
   // プロフィール
   visibleUserId: string;
+  inviteCode: string;  // 友達追加用の招待コード（ランダム8文字）
   nickname: string;
   profileImageUrl: string | null;
 

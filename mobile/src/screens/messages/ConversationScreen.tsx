@@ -1,7 +1,7 @@
 /**
  * ConversationScreen - 会話詳細画面
- * メッセージの送受信
- * Design: Wellness Serenity
+ * メッセージの送受信 + 友達リクエストの承認・ブロック
+ * Design: LINE風ダークテーマ
  */
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
@@ -36,7 +36,11 @@ import {
   Timestamp,
 } from 'firebase/firestore';
 import { getFirestoreInstance } from '../../services/firebase';
-import { colors, typography, spacing, borderRadius, shadows } from '../../theme';
+import {
+  acceptFriendRequest,
+  deleteConversation,
+} from '../../services/friendRequest';
+import { colors, typography, spacing, borderRadius } from '../../theme';
 import { useAuthStore } from '../../stores/authStore';
 import type { MainStackParamList } from '../../navigation/types';
 import { isPremiumUser } from '../../types/user';
@@ -51,6 +55,12 @@ interface Message {
   text: string;
   createdAt: Date;
   isDeleted: boolean;
+}
+
+interface ConversationData {
+  status: 'pending' | 'active' | 'blocked';
+  requestFromUserId?: string;
+  requestFromNickname?: string;
 }
 
 const MAX_FREE_MESSAGES = 10;
@@ -68,9 +78,30 @@ export const ConversationScreen: React.FC = () => {
   const [friendName, setFriendName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [messageCount, setMessageCount] = useState(0);
+  const [conversationData, setConversationData] = useState<ConversationData | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
   const flatListRef = useRef<FlatList>(null);
 
   const isPremium = isPremiumUser(userDocument);
+
+  // 会話データを取得
+  useEffect(() => {
+    const db = getFirestoreInstance();
+    const unsubscribe = onSnapshot(
+      doc(db, 'conversations', conversationId),
+      (docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          setConversationData({
+            status: data.status || 'active',
+            requestFromUserId: data.requestFromUserId,
+            requestFromNickname: data.requestFromNickname,
+          });
+        }
+      }
+    );
+    return () => unsubscribe();
+  }, [conversationId]);
 
   useEffect(() => {
     // 友達の名前を取得
@@ -135,6 +166,49 @@ export const ConversationScreen: React.FC = () => {
   const handleBack = useCallback(() => {
     navigation.goBack();
   }, [navigation]);
+
+  const handleAccept = useCallback(async () => {
+    setIsProcessing(true);
+    try {
+      const result = await acceptFriendRequest(conversationId);
+      if (result.success) {
+        Alert.alert(t('common.success'), t('friendRequest.accepted'));
+      } else {
+        Alert.alert(t('common.error'));
+      }
+    } catch (error) {
+      console.error('Error accepting friend request:', error);
+      Alert.alert(t('common.error'));
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [conversationId, t]);
+
+  const handleBlock = useCallback(async () => {
+    Alert.alert(
+      t('friendRequest.blockConfirm'),
+      t('friendRequest.blockConfirmMessage'),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('blocked.unblock'),
+          style: 'destructive',
+          onPress: async () => {
+            setIsProcessing(true);
+            try {
+              await deleteConversation(conversationId);
+              navigation.goBack();
+            } catch (error) {
+              console.error('Error blocking:', error);
+              Alert.alert(t('common.error'));
+            } finally {
+              setIsProcessing(false);
+            }
+          },
+        },
+      ]
+    );
+  }, [conversationId, navigation, t]);
 
   const handleSend = useCallback(async () => {
     if (!inputText.trim() || !user) return;
@@ -220,10 +294,13 @@ export const ConversationScreen: React.FC = () => {
   };
 
   const remainingMessages = Math.max(0, MAX_FREE_MESSAGES - messageCount);
+  const isPendingForMe =
+    conversationData?.status === 'pending' &&
+    conversationData?.requestFromUserId !== user?.uid;
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.surface} />
+      <StatusBar barStyle="light-content" backgroundColor={colors.lineDark.header} />
 
       {/* ヘッダー */}
       <View style={[styles.header, { paddingTop: insets.top + spacing.sm }]}>
@@ -241,8 +318,42 @@ export const ConversationScreen: React.FC = () => {
         <View style={styles.headerRight} />
       </View>
 
+      {/* 友達リクエスト承認バナー */}
+      {isPendingForMe && (
+        <View style={styles.pendingBanner}>
+          <Text style={styles.pendingText}>
+            {t('friendRequest.requestFromUser', {
+              name: conversationData?.requestFromNickname || friendName,
+            })}
+          </Text>
+          <View style={styles.pendingButtons}>
+            <TouchableOpacity
+              style={[styles.acceptButton, isProcessing && styles.buttonDisabled]}
+              onPress={handleAccept}
+              disabled={isProcessing}
+            >
+              <Text style={styles.acceptButtonText}>{t('friendRequest.acceptFriend')}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.blockButton, isProcessing && styles.buttonDisabled]}
+              onPress={handleBlock}
+              disabled={isProcessing}
+            >
+              <Text style={styles.blockButtonText}>{t('friendRequest.blockUser')}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
+      {/* ブロック中バナー */}
+      {conversationData?.status === 'blocked' && (
+        <View style={styles.blockedBanner}>
+          <Text style={styles.blockedText}>{t('blocked.info')}</Text>
+        </View>
+      )}
+
       {/* メッセージ残数（無料プランのみ） */}
-      {!isPremium && (
+      {!isPremium && conversationData?.status === 'active' && (
         <View style={styles.remainingBanner}>
           <Text style={styles.remainingText}>
             {t('chat.remainingMessages', { count: remainingMessages })}
@@ -265,36 +376,47 @@ export const ConversationScreen: React.FC = () => {
             flatListRef.current?.scrollToEnd({ animated: false })
           }
           showsVerticalScrollIndicator={false}
+          ListEmptyComponent={
+            <View style={styles.emptyMessages}>
+              <Text style={styles.emptyMessagesText}>
+                {isPendingForMe
+                  ? t('friendRequest.acceptToChat')
+                  : t('chat.noMessages')}
+              </Text>
+            </View>
+          }
         />
 
-        {/* 入力エリア */}
-        <View style={[styles.inputContainer, { paddingBottom: insets.bottom + spacing.sm }]}>
-          <TextInput
-            style={styles.input}
-            value={inputText}
-            onChangeText={setInputText}
-            placeholder={
-              !isPremium && messageCount >= MAX_FREE_MESSAGES
-                ? t('placeholder.messageLimitReached')
-                : t('placeholder.message')
-            }
-            placeholderTextColor={colors.text.tertiary}
-            multiline
-            maxLength={1000}
-            editable={isPremium || messageCount < MAX_FREE_MESSAGES}
-          />
-          <TouchableOpacity
-            style={[
-              styles.sendButton,
-              (!inputText.trim() || isLoading) && styles.sendButtonDisabled,
-            ]}
-            onPress={handleSend}
-            disabled={!inputText.trim() || isLoading}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.sendButtonText}>{t('common.send')}</Text>
-          </TouchableOpacity>
-        </View>
+        {/* 入力エリア（承認済みのみ表示） */}
+        {conversationData?.status === 'active' && (
+          <View style={[styles.inputContainer, { paddingBottom: insets.bottom + spacing.sm }]}>
+            <TextInput
+              style={styles.input}
+              value={inputText}
+              onChangeText={setInputText}
+              placeholder={
+                !isPremium && messageCount >= MAX_FREE_MESSAGES
+                  ? t('placeholder.messageLimitReached')
+                  : t('placeholder.message')
+              }
+              placeholderTextColor={colors.lineDark.textTertiary}
+              multiline
+              maxLength={1000}
+              editable={isPremium || messageCount < MAX_FREE_MESSAGES}
+            />
+            <TouchableOpacity
+              style={[
+                styles.sendButton,
+                (!inputText.trim() || isLoading) && styles.sendButtonDisabled,
+              ]}
+              onPress={handleSend}
+              disabled={!inputText.trim() || isLoading}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.sendButtonText}>{t('common.send')}</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </KeyboardAvoidingView>
     </View>
   );
@@ -303,7 +425,7 @@ export const ConversationScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.lineDark.background,
   },
   header: {
     flexDirection: 'row',
@@ -311,10 +433,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: spacing.md,
     paddingBottom: spacing.md,
-    backgroundColor: colors.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.gray[200],
-    ...shadows.sm,
+    backgroundColor: colors.lineDark.header,
+    borderBottomWidth: 0.5,
+    borderBottomColor: colors.lineDark.border,
   },
   backButton: {
     width: 44,
@@ -324,8 +445,8 @@ const styles = StyleSheet.create({
   },
   backArrow: {
     fontSize: 32,
-    color: colors.primary,
-    fontWeight: typography.weights.medium as '500',
+    color: colors.lineDark.textPrimary,
+    fontWeight: typography.weights.light as '300',
   },
   headerCenter: {
     flex: 1,
@@ -336,8 +457,8 @@ const styles = StyleSheet.create({
   headerAvatar: {
     width: 36,
     height: 36,
-    borderRadius: borderRadius.full,
-    backgroundColor: colors.primary,
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.lineDark.surfaceElevated,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: spacing.sm,
@@ -345,25 +466,80 @@ const styles = StyleSheet.create({
   headerAvatarText: {
     fontSize: typography.sizes.md,
     fontWeight: typography.weights.bold as '700',
-    color: colors.white,
+    color: colors.lineDark.textPrimary,
   },
   headerTitle: {
     fontSize: typography.sizes.lg,
     fontWeight: typography.weights.semibold as '600',
-    color: colors.text.primary,
+    color: colors.lineDark.textPrimary,
   },
   headerRight: {
     width: 44,
   },
+  pendingBanner: {
+    backgroundColor: colors.lineDark.surface,
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.xl,
+    borderBottomWidth: 0.5,
+    borderBottomColor: colors.lineDark.border,
+  },
+  pendingText: {
+    fontSize: typography.sizes.md,
+    color: colors.lineDark.textPrimary,
+    textAlign: 'center',
+    marginBottom: spacing.md,
+  },
+  pendingButtons: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: spacing.md,
+  },
+  acceptButton: {
+    backgroundColor: colors.lineDark.green,
+    paddingHorizontal: spacing['2xl'],
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.lg,
+  },
+  acceptButtonText: {
+    fontSize: typography.sizes.md,
+    color: colors.lineDark.textPrimary,
+    fontWeight: typography.weights.semibold as '600',
+  },
+  blockButton: {
+    backgroundColor: colors.lineDark.surfaceElevated,
+    paddingHorizontal: spacing['2xl'],
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: colors.error,
+  },
+  blockButtonText: {
+    fontSize: typography.sizes.md,
+    color: colors.error,
+    fontWeight: typography.weights.semibold as '600',
+  },
+  buttonDisabled: {
+    opacity: 0.5,
+  },
+  blockedBanner: {
+    backgroundColor: colors.errorLight,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xl,
+  },
+  blockedText: {
+    fontSize: typography.sizes.sm,
+    color: colors.error,
+    textAlign: 'center',
+  },
   remainingBanner: {
-    backgroundColor: colors.primaryMuted,
+    backgroundColor: colors.lineDark.surface,
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
     alignItems: 'center',
   },
   remainingText: {
     fontSize: typography.sizes.sm,
-    color: colors.primaryDark,
+    color: colors.lineDark.green,
     fontWeight: typography.weights.medium as '500',
   },
   keyboardContainer: {
@@ -372,6 +548,17 @@ const styles = StyleSheet.create({
   messagesContent: {
     padding: spacing.lg,
     flexGrow: 1,
+  },
+  emptyMessages: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: spacing['4xl'],
+  },
+  emptyMessagesText: {
+    fontSize: typography.sizes.md,
+    color: colors.lineDark.textSecondary,
+    textAlign: 'center',
   },
   messageContainer: {
     marginVertical: spacing.xs,
@@ -389,14 +576,13 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     paddingHorizontal: spacing.lg,
     borderRadius: borderRadius.xl,
-    ...shadows.xs,
   },
   myBubble: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.lineDark.green,
     borderBottomRightRadius: spacing.xs,
   },
   theirBubble: {
-    backgroundColor: colors.surface,
+    backgroundColor: colors.lineDark.surfaceElevated,
     borderBottomLeftRadius: spacing.xs,
   },
   messageText: {
@@ -407,7 +593,7 @@ const styles = StyleSheet.create({
     color: colors.white,
   },
   theirMessageText: {
-    color: colors.text.primary,
+    color: colors.lineDark.textPrimary,
   },
   deletedText: {
     fontStyle: 'italic',
@@ -415,7 +601,7 @@ const styles = StyleSheet.create({
   },
   messageTime: {
     fontSize: typography.sizes.xs,
-    color: colors.text.tertiary,
+    color: colors.lineDark.textTertiary,
     marginTop: spacing.xs,
   },
   inputContainer: {
@@ -423,34 +609,33 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.md,
-    backgroundColor: colors.surface,
-    borderTopWidth: 1,
-    borderTopColor: colors.gray[200],
+    backgroundColor: colors.lineDark.header,
+    borderTopWidth: 0.5,
+    borderTopColor: colors.lineDark.border,
   },
   input: {
     flex: 1,
     minHeight: 44,
     maxHeight: 100,
-    backgroundColor: colors.backgroundSecondary,
+    backgroundColor: colors.lineDark.searchBg,
     borderRadius: borderRadius.xl,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
     fontSize: typography.sizes.md,
-    color: colors.text.primary,
+    color: colors.lineDark.textPrimary,
     marginRight: spacing.sm,
   },
   sendButton: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.lineDark.green,
     borderRadius: borderRadius.xl,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
     justifyContent: 'center',
     alignItems: 'center',
     minHeight: 44,
-    ...shadows.sm,
   },
   sendButtonDisabled: {
-    backgroundColor: colors.gray[300],
+    backgroundColor: colors.lineDark.surfaceElevated,
   },
   sendButtonText: {
     color: colors.white,

@@ -1,170 +1,44 @@
-# WorkOutApp 手動作業タスク
+# Health Manager アプリ 手動作業管理
 
-## 運用ルール
+## 手動作業タスク一覧
 
-### 必須ルール（厳守）
-1. **各Workには「必要なタイミング」を記載（progressのどのPhase開始前に必要か）**
-2. **タスク完了時は該当タスクに [完了: YYYY-MM-DD] を追記**
-3. **Workの全タスク完了後、必ず該当Workをarchive.txtに移動する**
-   - 移動を忘れた場合、次のWorkまたは関連Phaseに進むことは禁止
-   - 移動前に全タスクが [完了] になっていることを確認
-4. **問題発生時は必ず problem.txt に記録**
+### Work 1: 通知権限設定（iOS）
+ステータス: 未着手
+優先度: 高
 
-### archive移動手順
-1. Work内の全タスクに [完了: YYYY-MM-DD] が付いていることを確認
-2. 該当Workのセクション全体をコピー
-3. archive.txt の「完了済み Work」セクションに貼り付け
-4. manual-work.txt から該当Workを削除
-5. archive.txt に完了日を記録
+#### 必要な作業
+1. Xcode でプロジェクトを開く
+2. Capabilities で Push Notifications を有効化
+3. Background Modes で Remote notifications を有効化
+4. Apple Developer Console で Push Notification 証明書を設定
+5. Firebase Console で APNs 証明書をアップロード
 
----
+#### 関連ファイル
+- ios/WorkOutAppMobile/WorkOutAppMobile.entitlements
+- ios/WorkOutAppMobile/Info.plist
 
-## 作業順序ガイド
-
-推奨される作業順序（progressのPhaseと並行して進める）:
-
-```
-Manual Work 1 → Manual Work 2 → Phase 1〜3
-                                    ↓
-                               Phase 4〜8
-                                    ↓
-               Manual Work 3 → Phase 9（課金）
-               Manual Work 4 ↗
-                                    ↓
-                               Phase 10（通知）
-                                    ↓
-                               Phase 11
-                                    ↓
-                               Phase 12（テスト）
-                                    ↓
-               Manual Work 5 → Phase 13（ビルド準備）
-                                    ↓
-                               Phase 15.1〜15.3（表記変更・登録フロー・仕様説明）
-                                    ↓
-               Manual Work 8 → Phase 15.4（ビジュアル実装）
-                                    ↓
-                               Phase 15.5〜15.6（UI/UX刷新・確認）
-                                    ↓
-               Manual Work 6 → Phase 14（公開）
-```
-
-### 現在の推奨作業順序（Phase 15）
-
-```
-Phase 15.1 表記変更
-    ↓
-Phase 15.2 登録フロー修正
-    ↓
-Phase 15.3 仕様説明オンボーディング
-    ↓
-Manual Work 8 素材作成 ←── 並行作業可能
-    ↓
-Phase 15.4 ビジュアル実装
-    ↓
-Phase 15.5 UI/UX刷新
-    ↓
-Phase 15.6 ビルド・動作確認
-```
+#### 備考
+- バッジ表示には通知権限が必要
+- 開発用・本番用両方の証明書が必要
 
 ---
 
-## Work 8: オンボーディング素材作成
-必要なタイミング: **Phase 15.4 開始前**
-関連: problem.txt Problem #3
+### Work 2: App Store Connect サブスクリプション確認
+ステータス: 完了
+優先度: 中
 
-### 8.1 初回オンボーディング用素材
-- [ ] スライド1用画像/アニメーション作成
-  - テーマ: ヘルスケアアプリ風の外観
-- [ ] スライド2用画像/アニメーション作成
-  - テーマ: 2つのアカウント設定
-- [ ] スライド3用画像/アニメーション作成
-  - テーマ: ダミー画面表示・全削除機能
-- [ ] スライド4用画像/アニメーション作成
-  - テーマ: 無料利用範囲（月10回）
-
-### 8.2 仕様説明オンボーディング用素材
-- [ ] スライド1用画像/アニメーション作成
-  - テーマ: 2つのアカウントで安全なやりとり
-- [ ] スライド2用画像/アニメーション作成
-  - テーマ: 設定画面・メッセージ画面でパスワード入力
-- [ ] スライド3用画像/アニメーション作成
-  - テーマ: アカウント1両方入力→本物のメッセージ
-- [ ] スライド4用画像/アニメーション作成
-  - テーマ: アカウント2両方入力→ダミーのメッセージ
-- [ ] スライド5用画像/アニメーション作成
-  - テーマ: アカウント1+アカウント2→全削除
-
-### 8.3 素材形式・仕様
-- [ ] 画像形式決定（PNG/SVG/Lottie）
-- [ ] アニメーション形式決定（Lottie推奨）
-- [ ] サイズ・解像度決定（@1x, @2x, @3x）
-- [ ] アセットフォルダに配置
-
-**備考:**
-- Lottieアニメーションを使用する場合は lottie-react-native パッケージが必要
-- AI生成画像を使用する場合は著作権・利用規約を確認
-- アプリのトーン（ヘルスケア風）に合わせたデザインにする
+#### 確認済み事項
+- Product ID: com.okiroya.workoutapp.subscription.monthly
+- Product ID: com.okiroya.workoutapp.subscription.yearly
+- Sandbox テスター設定済み
 
 ---
 
-## Work 6: App Store 審査提出
-必要なタイミング: **Phase 14 開始前**
+### Work 3: Google API キー ローテーション
+ステータス: 完了
+優先度: 高
 
-### 6.1 ビルドアップロード
-- [ ] Xcode で Archive 作成
-- [ ] App Store Connect にアップロード
-- [ ] ビルドの処理完了待ち（15-30分）
-
-### 6.2 App Store 情報入力（日本語）
-- [ ] App Store Connect → アプリ → App Store
-- [ ] スクリーンショット準備・アップロード
-  - [ ] 6.5インチ（iPhone 14 Pro Max等）
-  - [ ] 5.5インチ（iPhone 8 Plus等）
-- [ ] アプリ説明文入力（日本語）
-- [ ] キーワード設定（日本語）
-- [ ] サポートURL
-- [ ] プライバシーポリシーURL
-
-### 6.3 App Store 情報入力（英語）
-- [ ] App Store Connect → アプリ → App Store → ローカライズ追加
-- [ ] English (U.S.) を追加
-- [ ] スクリーンショット準備・アップロード（英語テキスト用）
-  - [ ] 6.5インチ
-  - [ ] 5.5インチ
-- [ ] アプリ説明文入力（英語）
-- [ ] キーワード設定（英語）
-
-### 6.4 App Review 情報
-- [ ] 連絡先情報入力
-- [ ] デモアカウント情報入力（レビュアー用）
-  - ダミーパスワードでログインできるテストアカウント
-  - 本命パスワードでログインできるテストアカウント
-- [ ] メモ欄に二重パスワードの説明を記載
-
-### 6.5 審査提出
-- [ ] ビルド選択
-- [ ] 審査に提出
-- [ ] 審査結果待ち（通常1-3日）
-
-### 6.6 審査対応（必要な場合）
-- [ ] リジェクト理由確認
-- [ ] 修正対応
-- [ ] 再提出
-
----
-
-## Work 7: リリース後運用準備
-必要なタイミング: **Phase 14 完了後**
-
-### 7.1 モニタリング設定
-- [ ] Firebase Crashlytics 設定
-- [ ] Firebase Analytics 確認
-- [ ] Firebase Performance Monitoring 設定（任意）
-
-### 7.2 サポート体制
-- [ ] 問い合わせ対応用メールアドレス準備
-- [ ] FAQ 準備
-
-### 7.3 アップデート計画
-- [ ] バージョン管理方針決定
-- [ ] 次回アップデート内容検討
+#### 完了した作業
+- GitGuardian 検出のキーを無効化
+- 新しいキーを生成: AIzaSyASZDitOAiOfL-c_Fem1tHw0o-P31xe-mY
+- firebase.config.local.ts に設定

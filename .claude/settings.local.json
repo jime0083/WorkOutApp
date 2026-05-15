@@ -26,7 +26,14 @@
       "Skill(example-skills:frontend-design)",
       "Bash(firebase deploy:*)",
       "Bash(npx react-native start)",
-      "Bash(xcrun simctl spawn:*)"
+      "Bash(xcrun simctl spawn:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push)",
+      "Bash(git -C /Users/jime0083/WorkOutApp log --oneline --all -- **/progress*)",
+      "Bash(git -C /Users/jime0083/WorkOutApp log --all --full-history -- progress.txt mobile/progress.txt **/progress.txt)",
+      "Bash(git -C /Users/jime0083/WorkOutApp show HEAD:progress.txt)",
+      "Bash(git -C /Users/jime0083/WorkOutApp checkout HEAD -- progress.txt)"
     ]
   }
 }

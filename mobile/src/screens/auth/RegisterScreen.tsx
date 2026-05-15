@@ -115,17 +115,13 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
       });
 
       if (result.success) {
-        const handleSuccess = () => {
-          if (onRegisterSuccess) {
-            onRegisterSuccess();
-          } else {
-            navigation.navigate('Login');
-          }
-        };
+        // 登録成功: Firebase Authで既にサインイン済みのため
+        // RootNavigatorが自動的にMainNavigator（Subscription画面）に遷移する
+        // 明示的なナビゲーションは不要
         Alert.alert(
           t('common.success'),
-          t('auth.accountCreated'),
-          [{ text: 'OK', onPress: handleSuccess }]
+          t('auth.accountCreatedSelectPlan'),
+          [{ text: 'OK', onPress: onRegisterSuccess }]
         );
       } else {
         // デバッグ用: エラー詳細を表示

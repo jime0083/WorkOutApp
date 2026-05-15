@@ -19,6 +19,10 @@
     "edit": "編集",
     "settings": "設定"
   },
+  "menu": {
+    "update": "アップデート",
+    "changePlan": "プラン変更"
+  },
   "nav": {
     "talk": "トーク",
     "friends": "友だち",
@@ -59,6 +63,7 @@
     "enterNickname": "表示名を入力",
     "registerButton": "登録する",
     "accountCreated": "アカウントが作成されました。ログインしてください。",
+    "accountCreatedSelectPlan": "アカウントが作成されました。プランを選択してください。",
     "registerFailed": "登録に失敗しました",
     "registerError": "登録中にエラーが発生しました"
   },
@@ -107,7 +112,12 @@
     "sendRequest": "友達申請を送る",
     "requestSent": "友達申請を送信しました",
     "yourId": "あなたのID",
-    "shareIdHint": "友だちにこのIDを教えて追加してもらいましょう"
+    "shareIdHint": "友だちにこのIDを教えて追加してもらいましょう",
+    "yourInviteCode": "あなたの招待コード",
+    "shareCodeHint": "このコードを友だちに教えて追加してもらいましょう",
+    "enterInviteCode": "招待コードを入力",
+    "inviteCodePlaceholder": "8文字のコードを入力",
+    "alreadyFriend": "すでに友だちです"
   },
   "profile": {
     "userId": "ユーザーID",
@@ -178,7 +188,7 @@
     "monthly": "月額",
     "yearly": "年額",
     "monthlyPrice": "¥500/月",
-    "yearlyPrice": "¥4,800/年",
+    "yearlyPrice": "¥5,000/年",
     "yearlyDiscount": "20%OFF",
     "features": "プレミアム機能",
     "unlimitedMessages": "メッセージ無制限",
@@ -186,6 +196,7 @@
     "messageDelete": "メッセージ削除機能",
     "panicButton": "緊急削除ボタン",
     "purchase": "購入する",
+    "startWithThisPlan": "このプランで始める",
     "purchasing": "購入処理中...",
     "restore": "購入を復元",
     "restoring": "復元中...",
@@ -200,7 +211,9 @@
     "cancelNote": "キャンセルはApp Storeの設定から行ってください",
     "termsOfUse": "利用規約",
     "privacyPolicy": "プライバシーポリシー",
-    "subscriptionNote": "サブスクリプションは確認時にAppleアカウントに請求されます。現在の契約期間終了の24時間前までにキャンセルしない限り自動的に更新されます。"
+    "subscriptionNote": "サブスクリプションは確認時にAppleアカウントに請求されます。現在の契約期間終了の24時間前までにキャンセルしない限り自動的に更新されます。",
+    "cancelSubscriptionButton": "サブスクリプションを解除",
+    "cancelSubscriptionDesc": "App Storeの設定画面で解除手続きを行います"
   },
   "settings": {
     "title": "設定",
@@ -208,6 +221,7 @@
     "japanese": "日本語",
     "english": "English",
     "account": "アカウント",
+    "selectPlan": "プランの選択",
     "deleteAccount": "アカウント削除",
     "panicButton": "緊急全データ削除",
     "panicButtonDesc": "すべてのデータを即座に削除します"
@@ -219,7 +233,15 @@
     "noSent": "送信した友達申請はありません",
     "accept": "承認",
     "reject": "拒否",
-    "pending": "承認待ち"
+    "pending": "承認待ち",
+    "newRequest": "友達申請が届いています",
+    "requestFromUser": "{{name}}さんから友達申請が届いています",
+    "acceptFriend": "友達を承認する",
+    "blockUser": "ブロックする",
+    "accepted": "友達申請を承認しました",
+    "blockConfirm": "ブロックの確認",
+    "blockConfirmMessage": "このユーザーをブロックしますか？会話が削除されます。",
+    "acceptToChat": "友達を承認するとトークを始められます"
   },
   "blocked": {
     "empty": "ブロックしているユーザーはいません",
@@ -229,6 +251,7 @@
   },
   "chat": {
     "noMessages": "メッセージがありません",
+    "yesterday": "昨日",
     "imageMessage": "画像",
     "videoMessage": "動画",
     "unknownUser": "不明なユーザー",
