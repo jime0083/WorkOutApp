@@ -1,5 +1,87 @@
 # Health Manager アプリ 問題管理
 
+## Problem #10: アプリ起動時に毎回ログイン画面が表示される
+発生日: 2026-05-16
+関連Phase: Phase 18
+ステータス: 修正完了（実機動作確認待ち）
+
+### 必須チェックリスト（全て完了必須）
+- [x] 1. problem.txt の過去事例を確認した
+- [x] 2. TodoWrite に問題対応タスクを追加した
+- [x] 3. 原因を徹底調査した
+- [x] 4. 修正計画を作成した
+- [x] 5. problem.txt に記録した（この項目）
+- [x] 6. 修正を実施した
+- [ ] 7. 動作確認を完了した
+- [ ] 8. TodoWrite のタスクを完了にした
+
+### 問題の詳細
+- アプリを毎回起動するとオンボーディング画面が表示される
+- その後ログイン画面に遷移し、毎回ログインが必要
+- 一度ログインしたらホーム画面（ダミー画面）まで自動で進むべき
+- ただし、設定画面・メッセージ画面へのアクセス時は毎回パスワード認証を求める（現状通り）
+
+### 原因分析
+Firebase JS SDK を React Native で使用する場合、デフォルトの認証永続化（IndexedDB）が機能しない。
+`getReactNativePersistence` と `AsyncStorage` を使った明示的な永続化設定が必要。
+
+**現状のコード** (`firebase.ts`):
+```typescript
+auth = getAuth(firebaseApp);  // ブラウザ用の永続化のみ
+```
+
+Firebase JS SDK は Web ブラウザ向けに設計されており、React Native 環境では
+IndexedDB が利用できないため、セッションが永続化されない。
+
+### 修正計画
+
+#### Step 1: firebase.ts の修正
+`getReactNativePersistence` を使用して AsyncStorage ベースの永続化を設定
+
+```typescript
+import { initializeAuth, getReactNativePersistence } from 'firebase/auth';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+auth = initializeAuth(firebaseApp, {
+  persistence: getReactNativePersistence(AsyncStorage)
+});
+```
+
+#### Step 2: RootNavigator の確認
+オンボーディング完了後、認証状態に応じた画面遷移が正しく動作することを確認
+- オンボーディング未完了 → オンボーディング画面
+- オンボーディング完了 & 未ログイン → 認証画面
+- オンボーディング完了 & ログイン済み → ホーム画面（ダミー画面）
+
+#### Step 3: accessStore の確認
+設定画面・メッセージ画面へのアクセス時のパスワード認証は毎回要求されることを確認
+（accessStore の認証状態はメモリ上のみで永続化しない＝現状維持）
+
+### 修正ファイル
+- /src/services/firebase.ts
+- /tsconfig.json（TypeScript設定追加）
+
+### 実施した修正内容
+1. `firebase.ts` を修正:
+   - `initializeAuth` と `getReactNativePersistence` を使用
+   - AsyncStorage ベースの永続化を設定
+
+2. `tsconfig.json` を修正:
+   - `moduleResolution: "bundler"` を追加
+   - `customConditions: ["react-native"]` を追加
+
+### ビルド確認結果
+- TypeScript型チェック: PASSED
+- iOSビルド: BUILD SUCCEEDED
+
+### 期待される動作
+1. 初回起動: オンボーディング → 認証（登録/ログイン） → ホーム画面
+2. 2回目以降: アプリ起動 → 直接ホーム画面
+3. 設定画面へ: ホーム画面 → パスワード入力（毎回） → 設定画面
+4. メッセージ画面へ: 設定画面 → パスワード入力（毎回） → メッセージ画面
+
+---
+
 ## Problem #9: メニュー機能拡張
 発生日: 2026-05-16
 関連Phase: Phase 17

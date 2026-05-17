@@ -69,7 +69,7 @@ export const HeaderMenu: React.FC = () => {
         onPress={openMenu}
         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
       >
-        <Text style={styles.menuIcon}></Text>
+        <Text style={styles.menuIcon}>☰</Text>
       </TouchableOpacity>
 
       <Modal
@@ -124,10 +124,13 @@ export const HeaderMenu: React.FC = () => {
 const styles = StyleSheet.create({
   menuButton: {
     padding: spacing.sm,
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+    borderRadius: 8,
   },
   menuIcon: {
-    fontSize: 24,
-    color: colors.text.primary,
+    fontSize: 28,
+    color: '#000000',
+    fontWeight: '600',
   },
   overlay: {
     flex: 1,

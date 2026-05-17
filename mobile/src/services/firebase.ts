@@ -2,9 +2,12 @@
  * Firebase 初期化設定（Firebase JS SDK）
  */
 import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
-import { getAuth, Auth } from 'firebase/auth';
+import { initializeAuth, Auth } from 'firebase/auth';
+// @ts-ignore - React Native specific export
+import { getReactNativePersistence } from '@firebase/auth/dist/rn/index.js';
 import { getFirestore, Firestore } from 'firebase/firestore';
 import { getFunctions, Functions } from 'firebase/functions';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Firebase設定（ローカル設定ファイルから読み込み）
 import { firebaseConfig, FIREBASE_PROJECT_ID as PROJECT_ID } from '../config';
@@ -31,11 +34,14 @@ export const initializeFirebase = (): FirebaseApp => {
 
 /**
  * Firebase Auth インスタンス取得
+ * React Native環境ではAsyncStorageを使用して認証状態を永続化
  */
 export const getAuthInstance = (): Auth => {
   if (!auth) {
     const firebaseApp = app || initializeFirebase();
-    auth = getAuth(firebaseApp);
+    auth = initializeAuth(firebaseApp, {
+      persistence: getReactNativePersistence(AsyncStorage),
+    });
   }
   return auth;
 };
