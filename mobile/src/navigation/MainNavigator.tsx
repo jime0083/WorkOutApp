@@ -2,7 +2,7 @@
  * MainNavigator - メインナビゲーター
  * ダミータブ + 認証が必要な画面のスタックナビゲーター
  */
-import React from 'react';
+import React, { useEffect } from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Text, StyleSheet } from 'react-native';
@@ -22,6 +22,7 @@ import {
 } from '../screens/messages';
 import { SubscriptionScreen } from '../screens/subscription';
 import { NotificationPermissionScreen } from '../screens/notification/NotificationPermissionScreen';
+import { useSubscriptionStore } from '../stores/subscriptionStore';
 
 const Stack = createNativeStackNavigator<MainStackParamList>();
 const Tab = createBottomTabNavigator<DummyTabParamList>();
@@ -83,8 +84,30 @@ const DummyTabNavigator: React.FC = () => {
 };
 
 export const MainNavigator: React.FC = () => {
+  const {
+    hasSelectedPlan,
+    isLoading,
+    initialize,
+  } = useSubscriptionStore();
+
+  // サブスクリプション選択状態を初期化
+  useEffect(() => {
+    initialize();
+  }, [initialize]);
+
+  // ローディング中は何も表示しない
+  if (isLoading) {
+    return null;
+  }
+
+  // プラン選択済みかどうかで初期画面を決定
+  const initialRouteName = hasSelectedPlan ? 'DummyTabs' : 'Subscription';
+
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator
+      screenOptions={{ headerShown: false }}
+      initialRouteName={initialRouteName}
+    >
       <Stack.Screen name="Subscription" component={SubscriptionScreen} />
       <Stack.Screen name="DummyTabs" component={DummyTabNavigator} />
       <Stack.Screen

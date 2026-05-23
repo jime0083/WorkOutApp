@@ -27,6 +27,7 @@ import {
   processPurchase,
 } from '../../services/subscription';
 import { openSubscriptionManagement } from '../../services/unreadCount';
+import { useSubscriptionStore } from '../../stores/subscriptionStore';
 
 type NavigationProp = NativeStackNavigationProp<MainStackParamList>;
 
@@ -49,6 +50,7 @@ interface SubscriptionPlan {
 export const SubscriptionScreen: React.FC = () => {
   const { t } = useTranslation();
   const navigation = useNavigation<NavigationProp>();
+  const { completePlanSelection } = useSubscriptionStore();
   const [isLoading, setIsLoading] = useState(true);
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [monthlyPrice, setMonthlyPrice] = useState('¥500');
@@ -75,7 +77,10 @@ export const SubscriptionScreen: React.FC = () => {
               [
                 {
                   text: 'OK',
-                  onPress: () => navigation.replace('DummyTabs'),
+                  onPress: async () => {
+                    await completePlanSelection();
+                    navigation.replace('DummyTabs');
+                  },
                 },
               ]
             );
@@ -207,6 +212,7 @@ export const SubscriptionScreen: React.FC = () => {
   const handleSelectPlan = async (plan: SubscriptionPlan) => {
     if (plan.type === 'free') {
       // 無料プランで続行
+      await completePlanSelection();
       navigation.replace('DummyTabs');
       return;
     }

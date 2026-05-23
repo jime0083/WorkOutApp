@@ -2,9 +2,8 @@
  * Firebase 初期化設定（Firebase JS SDK）
  */
 import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
-import { initializeAuth, Auth } from 'firebase/auth';
-// @ts-ignore - React Native specific export
-import { getReactNativePersistence } from '@firebase/auth/dist/rn/index.js';
+// @ts-expect-error - getReactNativePersistence is exported from react-native conditional export
+import { initializeAuth, getReactNativePersistence, Auth } from 'firebase/auth';
 import { getFirestore, Firestore } from 'firebase/firestore';
 import { getFunctions, Functions } from 'firebase/functions';
 import AsyncStorage from '@react-native-async-storage/async-storage';

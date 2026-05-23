@@ -1,9 +1,10 @@
 # Health Manager アプリ 問題管理
 
-## Problem #10: アプリ起動時に毎回ログイン画面が表示される
-発生日: 2026-05-16
+## Problem #11: Xcodeビルドエラー（Metro bundler モジュール解決失敗）
+発生日: 2026-05-18
+解決日: 2026-05-18
 関連Phase: Phase 18
-ステータス: 修正完了（実機動作確認待ち）
+ステータス: 解決済み
 
 ### 必須チェックリスト（全て完了必須）
 - [x] 1. problem.txt の過去事例を確認した
@@ -12,8 +13,85 @@
 - [x] 4. 修正計画を作成した
 - [x] 5. problem.txt に記録した（この項目）
 - [x] 6. 修正を実施した
-- [ ] 7. 動作確認を完了した
-- [ ] 8. TodoWrite のタスクを完了にした
+- [x] 7. 動作確認を完了した
+- [x] 8. TodoWrite のタスクを完了にした
+
+### 問題の詳細
+- Xcodeでビルド時に「Command PhaseScriptExecution failed with a nonzero exit code」エラー
+- Metro bundler が exit code 137 で終了
+- エラー: `Unable to resolve module @firebase/auth/dist/rn/index.js`
+
+### 原因分析
+Problem #10 の修正で追加したインポートパスが Metro bundler で解決できない:
+```typescript
+import { getReactNativePersistence } from '@firebase/auth/dist/rn/index.js';
+```
+
+- `@firebase/auth` パッケージは `node_modules/firebase/node_modules/` にネストされている
+- Metro はデフォルトで conditional exports を解決しない
+- TypeScript は通るが、Metro bundler では解決できない
+
+### 修正計画
+
+#### Step 1: metro.config.js の修正
+`unstable_enablePackageExports` を有効化し、react-native condition を優先
+
+#### Step 2: firebase.ts の修正
+直接パス指定から `firebase/auth` インポートに変更
+
+### 修正ファイル
+- /metro.config.js
+- /src/services/firebase.ts
+
+### 実施した修正内容
+
+#### 1. metro.config.js
+```javascript
+const config = {
+  resolver: {
+    unstable_enablePackageExports: true,
+    unstable_conditionNames: ['react-native', 'browser', 'require'],
+  },
+};
+```
+
+#### 2. firebase.ts
+```typescript
+// Before (エラー)
+import { getReactNativePersistence } from '@firebase/auth/dist/rn/index.js';
+
+// After (修正後)
+// @ts-expect-error - getReactNativePersistence is exported from react-native conditional export
+import { initializeAuth, getReactNativePersistence, Auth } from 'firebase/auth';
+```
+
+### ビルド確認結果
+- Metro bundler バンドルテスト: 成功
+- TypeScript型チェック: PASSED
+- iOSビルド: BUILD SUCCEEDED
+
+### 期待される動作
+- Metro bundler がエラーなくバンドル生成
+- iOSビルド成功
+- Firebase Auth 永続化が正常動作
+
+---
+
+## Problem #10: アプリ起動時に毎回ログイン画面が表示される（追加修正）
+発生日: 2026-05-16
+解決日: 2026-05-18
+関連Phase: Phase 18
+ステータス: 解決済み
+
+### 必須チェックリスト（全て完了必須）
+- [x] 1. problem.txt の過去事例を確認した
+- [x] 2. TodoWrite に問題対応タスクを追加した
+- [x] 3. 原因を徹底調査した
+- [x] 4. 修正計画を作成した
+- [x] 5. problem.txt に記録した（この項目）
+- [x] 6. 修正を実施した
+- [x] 7. 動作確認を完了した
+- [x] 8. TodoWrite のタスクを完了にした
 
 ### 問題の詳細
 - アプリを毎回起動するとオンボーディング画面が表示される
@@ -60,6 +138,8 @@ auth = initializeAuth(firebaseApp, {
 ### 修正ファイル
 - /src/services/firebase.ts
 - /tsconfig.json（TypeScript設定追加）
+- /metro.config.js（Package exports有効化）
+- /src/navigation/RootNavigator.tsx（authStore.initialize()追加）
 
 ### 実施した修正内容
 1. `firebase.ts` を修正:
@@ -69,6 +149,15 @@ auth = initializeAuth(firebaseApp, {
 2. `tsconfig.json` を修正:
    - `moduleResolution: "bundler"` を追加
    - `customConditions: ["react-native"]` を追加
+
+3. `metro.config.js` を修正（Problem #11対応）:
+   - `unstable_enablePackageExports: true` を追加
+   - `unstable_conditionNames: ['react-native', 'browser', 'require']` を追加
+
+4. `RootNavigator.tsx` を修正（追加修正 2026-05-18）:
+   - `authStore.initialize()` の呼び出しを追加
+   - Firebase Auth の状態監視を開始するように修正
+   - `isInitialized` を使用してローディング判定
 
 ### ビルド確認結果
 - TypeScript型チェック: PASSED

@@ -14,19 +14,28 @@ import { OnboardingScreen } from '../screens/onboarding';
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export const RootNavigator: React.FC = () => {
-  const { user, isLoading: authLoading } = useAuthStore();
+  const {
+    user,
+    isInitialized: authInitialized,
+    initialize: initializeAuth,
+  } = useAuthStore();
   const {
     isOnboardingComplete,
     isLoading: onboardingLoading,
-    initialize,
+    initialize: initializeOnboarding,
   } = useOnboardingStore();
 
+  // 認証状態とオンボーディング状態の初期化
   useEffect(() => {
-    initialize();
-  }, [initialize]);
+    initializeOnboarding();
+    const unsubscribeAuth = initializeAuth();
+    return () => {
+      unsubscribeAuth();
+    };
+  }, [initializeOnboarding, initializeAuth]);
 
-  // ローディング中は何も表示しない
-  if (authLoading || onboardingLoading) {
+  // 初期化が完了するまでローディング表示（何も表示しない）
+  if (!authInitialized || onboardingLoading) {
     return null;
   }
 
