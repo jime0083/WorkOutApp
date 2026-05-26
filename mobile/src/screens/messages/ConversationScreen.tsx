@@ -23,6 +23,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import {
   collection,
+  collectionGroup,
   doc,
   getDoc,
   addDoc,
@@ -34,6 +35,7 @@ import {
   onSnapshot,
   serverTimestamp,
   Timestamp,
+  increment,
 } from 'firebase/firestore';
 import { getFirestoreInstance } from '../../services/firebase';
 import {
@@ -103,6 +105,27 @@ export const ConversationScreen: React.FC = () => {
     return () => unsubscribe();
   }, [conversationId]);
 
+  // 会話画面を開いた時に自分の未読カウントをリセット
+  useEffect(() => {
+    if (!user || !conversationId) return;
+
+    const resetUnreadCount = async () => {
+      try {
+        const db = getFirestoreInstance();
+        console.log('[UnreadReset] Resetting unread count for user:', user.uid);
+        await updateDoc(doc(db, 'conversations', conversationId), {
+          [`unreadCount.${user.uid}`]: 0,
+          updatedAt: serverTimestamp(),
+        });
+        console.log('[UnreadReset] Successfully reset unread count');
+      } catch (error: any) {
+        console.error('[UnreadReset] Failed to reset unread count:', error);
+      }
+    };
+
+    resetUnreadCount();
+  }, [conversationId, user]);
+
   useEffect(() => {
     // 友達の名前を取得
     const fetchFriendName = async () => {
@@ -117,22 +140,32 @@ export const ConversationScreen: React.FC = () => {
   }, [friendId, t]);
 
   useEffect(() => {
-    // 今月のメッセージ数を取得
+    // 今月のメッセージ数を取得（collectionGroupで全会話のメッセージを横断検索）
     if (!user) return;
 
     const db = getFirestoreInstance();
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
+    console.log('[MessageCount] Setting up query for user:', user.uid);
+    console.log('[MessageCount] Start of month:', startOfMonth.toISOString());
+
     const q = query(
-      collection(db, 'messages'),
+      collectionGroup(db, 'messages'),
       where('senderId', '==', user.uid),
       where('createdAt', '>=', Timestamp.fromDate(startOfMonth))
     );
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      setMessageCount(snapshot.size);
-    });
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        console.log('[MessageCount] Query returned', snapshot.size, 'messages');
+        setMessageCount(snapshot.size);
+      },
+      (error) => {
+        console.error('[MessageCount] Query error:', error.code, error.message);
+      }
+    );
 
     return () => unsubscribe();
   }, [user]);
@@ -236,26 +269,32 @@ export const ConversationScreen: React.FC = () => {
     try {
       const db = getFirestoreInstance();
 
+      console.log('[SendMessage] Adding message to conversation:', conversationId);
       // メッセージを追加
-      await addDoc(collection(db, 'conversations', conversationId, 'messages'), {
+      const msgRef = await addDoc(collection(db, 'conversations', conversationId, 'messages'), {
         senderId: user.uid,
         text: messageText,
         createdAt: serverTimestamp(),
         isDeleted: false,
       });
+      console.log('[SendMessage] Message added:', msgRef.id);
 
-      // 会話の最終メッセージを更新
+      // 会話の最終メッセージを更新 + 相手の未読カウントをインクリメント
+      console.log('[SendMessage] Updating conversation, incrementing unreadCount for:', friendId);
       await updateDoc(doc(db, 'conversations', conversationId), {
         lastMessage: messageText,
         lastMessageAt: serverTimestamp(),
+        [`unreadCount.${friendId}`]: increment(1),
+        updatedAt: serverTimestamp(),
       });
+      console.log('[SendMessage] Conversation updated successfully');
     } catch (error) {
-      console.error('Error sending message:', error);
+      console.error('[SendMessage] Error:', error);
       Alert.alert(t('common.error'));
     } finally {
       setIsLoading(false);
     }
-  }, [inputText, user, isPremium, messageCount, conversationId, navigation, t]);
+  }, [inputText, user, isPremium, messageCount, conversationId, friendId, navigation, t]);
 
   const renderMessage = ({ item }: { item: Message }) => {
     const isMe = item.senderId === user?.uid;

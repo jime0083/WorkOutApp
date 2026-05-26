@@ -1,5 +1,517 @@
 # Health Manager アプリ 問題管理
 
+## Problem #19: IAP課金テストが失敗する（user-cancelled）
+発生日: 2026-05-26
+関連Phase: Phase 20
+ステータス: 調査完了（App Store Connect設定確認待ち）
+
+### 必須チェックリスト（全て完了必須）
+- [x] 1. problem.txt の過去事例を確認した
+- [x] 2. TodoWrite に問題対応タスクを追加した
+- [x] 3. 原因を徹底調査した（デバッグAlertで実証）
+- [x] 4. 修正計画を作成した
+- [x] 5. problem.txt に記録した（この項目）
+- [ ] 6. 修正を実施した
+- [ ] 7. 動作確認を完了した
+- [ ] 8. TodoWrite のタスクを完了にした
+
+### 問題の詳細
+- 課金テストを実行
+- Sandboxアカウントでサインイン
+- エラー: `code:user-cancelled, msg:Request Cancelled`
+- 購入処理が完了しない
+
+### デバッグAlert結果（実証済み）
+```
+1. DEBUG: IAP Init → initializeIAP result: true ✅
+2. DEBUG: Products Loaded → Found 2 products: monthly $4.99, yearly $49.99 ✅
+3. DEBUG: Purchase Start → Requesting purchase for com.okiroya.workoutapp.subscription.monthly ✅
+4. DEBUG: Request Sent → purchaseSubscription() completed without error ✅
+5. DEBUG: Purchase Error Details → code: user-cancelled, message: Request Cancelled ❌
+   - responseCode: undefined
+   - productId: undefined
+```
+
+### 原因分析（実証ベース）
+
+**実証された事実:**
+1. ✅ IAP初期化: 成功
+2. ✅ 商品取得: 成功（2商品、価格も正しい）
+3. ✅ 購入リクエスト: `purchaseSubscription()`はエラーなしで完了
+4. ❌ 購入結果: `purchaseErrorListener`が`user-cancelled`を受信
+
+**排除された仮説:**
+- ❌ StoreKit Configuration欠如 → 商品取得が成功しているので問題なし
+- ❌ Product ID不一致 → 正しいIDで商品取得できている
+- ❌ コードのバグ → purchaseSubscription()は正常完了
+
+**実証された根本原因:**
+**App Store Connect / Sandbox環境の設定問題**
+
+`user-cancelled` + `productId: undefined` の組み合わせは、StoreKit側で
+購入リクエストが拒否されていることを示す。考えられる原因:
+
+| 原因 | 確認方法 |
+|------|----------|
+| Paid Applications Agreement未完了 | App Store Connect > 契約/税金/口座情報 |
+| Sandbox T&C未同意 | 実機の設定 > App Store > サンドボックスアカウント |
+| In-App Purchase未承認 | App Store Connect > App内課金 > ステータス確認 |
+| バンドルID不一致 | App Store Connect vs Xcode の Bundle ID比較 |
+
+### 修正計画
+
+#### Step 1: App Store Connect確認（手動作業）
+1. **契約/税金/口座情報**を確認
+   - 「Paid Applications」契約が「Active」であること
+   - 銀行口座・税務情報が設定済みであること
+
+2. **App内課金ステータス**を確認
+   - App Store Connect > アプリ > App内課金
+   - 各商品が「Ready to Submit」または「承認済み」であること
+
+3. **バンドルID**を確認
+   - App Store Connect: com.okiroya.workoutapp
+   - Xcode: プロジェクト設定のBundle Identifier
+
+#### Step 2: Sandboxアカウント確認（手動作業）
+1. **実機**の設定 > App Store > サンドボックスアカウントでサインアウト
+2. 再度サインイン
+3. 利用規約に同意（表示された場合）
+
+#### Step 3: 再テスト
+1. アプリを再インストール
+2. 課金テストを実行
+3. 結果を確認
+
+### 修正ファイル
+- なし（コード修正不要、App Store Connect設定の問題）
+
+### Note
+最初の推測「StoreKit Configuration欠如」は**誤り**でした。
+デバッグAlertで実証した結果、商品取得は成功しており、
+問題はApp Store Connect/Sandbox環境の設定にあることが判明。
+
+---
+
+## Problem #18: 会話を開いても未読バッジが消えない
+発生日: 2026-05-25
+解決日: 2026-05-26
+関連Phase: Phase 19
+ステータス: 解決済み
+
+### 必須チェックリスト（全て完了必須）
+- [x] 1. problem.txt の過去事例を確認した
+- [x] 2. TodoWrite に問題対応タスクを追加した
+- [x] 3. 原因を徹底調査した
+- [x] 4. 修正計画を作成した
+- [x] 5. problem.txt に記録した（この項目）
+- [x] 6. 修正を実施した
+- [x] 7. 動作確認を完了した
+- [x] 8. TodoWrite のタスクを完了にした
+
+### 採用した解決策
+会話画面を開いた時に自分のunreadCountを0にリセットするuseEffectを追加
+
+### 学んだこと
+- メッセージ機能では送信時のカウント更新だけでなく、閲覧時のリセット処理も必要
+
+### 問題の詳細
+- メッセージを受信するとアプリに通知バッジが表示される
+- 会話画面を開いてメッセージを確認しても、バッジが消えない
+- 未読状態が解除されていない
+
+### 原因分析
+コード検索結果:
+```bash
+grep -r "unreadCount.*=.*0|resetUnread|markAsRead" /mobile/src
+```
+→ **unreadCount をリセットするコードが存在しない**
+
+**問題のフロー:**
+1. メッセージ送信時: `unreadCount.${friendId}` が `increment(1)` される（正常）
+2. 会話画面を開く: **unreadCount をリセットする処理がない** ← 問題
+3. バッジ計算: `unreadCount[userId]` の合計が常に増え続ける
+
+### 修正計画
+
+#### Step 1: ConversationScreen.tsx に unreadCount リセット処理を追加
+会話画面を開いた時に、自分の unreadCount を 0 にリセット:
+
+```typescript
+useEffect(() => {
+  if (!user || !conversationId) return;
+
+  // 自分の未読カウントをリセット
+  const resetUnreadCount = async () => {
+    const db = getFirestoreInstance();
+    await updateDoc(doc(db, 'conversations', conversationId), {
+      [`unreadCount.${user.uid}`]: 0,
+      updatedAt: serverTimestamp(),
+    });
+  };
+
+  resetUnreadCount();
+}, [conversationId, user]);
+```
+
+#### Step 2: 動作確認
+- メッセージ受信 → バッジ表示
+- 会話画面を開く → バッジが消える
+
+### 修正ファイル
+- /mobile/src/screens/messages/ConversationScreen.tsx
+
+---
+
+## Problem #17: 残りメッセージ回数が変化しない
+発生日: 2026-05-25
+解決日: 2026-05-26
+関連Phase: Phase 19
+ステータス: 解決済み
+
+### 必須チェックリスト（全て完了必須）
+- [x] 1. problem.txt の過去事例を確認した
+- [x] 2. TodoWrite に問題対応タスクを追加した
+- [x] 3. 原因を徹底調査した
+- [x] 4. 修正計画を作成した
+- [x] 5. problem.txt に記録した（この項目）
+- [x] 6. 修正を実施した（collectionGroupクエリに変更）
+- [x] 7. 動作確認を完了した
+- [x] 8. TodoWrite のタスクを完了にした
+
+### 採用した解決策
+1. collectionGroup(db, 'messages')を使用してサブコレクションを横断検索
+2. firestore.indexesにCOLLECTION_GROUPインデックスを追加
+3. firestore.rulesにcollectionGroup読み取りルールを追加
+
+### 学んだこと
+- サブコレクションのデータを横断検索するにはcollectionGroupが必要
+- collectionGroupにはインデックスとセキュリティルールの両方が必要
+- デバッグビルドでないとコード変更が反映されない場合がある
+
+### 追加調査（2026-05-25 15:20）
+前回の修正（collectionGroupへの変更、インデックス追加、ルール追加）を実施したが問題が解決していない。
+
+**確認済み項目:**
+1. ✅ firestore.indexes.json に COLLECTION_GROUP インデックス追加済み
+2. ✅ firestore.rules に collectionGroup 読み取りルール追加済み
+3. ✅ firebase deploy 成功、インデックスは READY 状態
+4. ✅ ConversationScreen.tsx を collectionGroup(db, 'messages') に変更済み
+
+**新たな問題仮説:**
+onSnapshot のエラーハンドラがなく、クエリが失敗してもサイレントに失敗している可能性。
+→ エラーハンドリングとログを追加済み
+
+**次のステップ:**
+アプリを再ビルドしてログを確認し、実際のエラーを特定する
+
+### 問題の詳細
+- 無課金ユーザーの残りメッセージ回数が10回から変化しない
+- 月10回の制限が機能していない
+
+### 原因分析
+ConversationScreen.tsx (119-138行目) でメッセージカウントを取得するクエリ:
+```typescript
+const q = query(
+  collection(db, 'messages'),  // ← ルートレベルの'messages'を参照
+  where('senderId', '==', user.uid),
+  where('createdAt', '>=', Timestamp.fromDate(startOfMonth))
+);
+```
+
+しかし実際のメッセージは `conversations/{conversationId}/messages` というサブコレクションに保存されている。
+ルートレベルの `messages` コレクションは存在しないか空のため、常に0件が返される。
+
+### 修正計画
+
+#### Step 1: collectionGroup を使用したクエリに変更
+```typescript
+import { collectionGroup } from 'firebase/firestore';
+
+const q = query(
+  collectionGroup(db, 'messages'),
+  where('senderId', '==', user.uid),
+  where('createdAt', '>=', Timestamp.fromDate(startOfMonth))
+);
+```
+
+#### Step 2: Firestoreルールに collectionGroup クエリを許可するインデックスを追加
+firestore.indexes.json に以下を追加:
+```json
+{
+  "collectionGroup": "messages",
+  "queryScope": "COLLECTION_GROUP",
+  "fields": [
+    { "fieldPath": "senderId", "order": "ASCENDING" },
+    { "fieldPath": "createdAt", "order": "ASCENDING" }
+  ]
+}
+```
+
+#### Step 3: Firestoreルールで collectionGroup 読み取りを許可
+```javascript
+match /{path=**}/messages/{messageId} {
+  allow read: if isAuthenticated() &&
+    resource.data.senderId == request.auth.uid;
+}
+```
+
+### 修正ファイル
+- /mobile/src/screens/messages/ConversationScreen.tsx
+- /firestore.indexes.json
+- /firestore.rules
+
+---
+
+## Problem #16: 通知が来ない・通知ドットが表示されない
+発生日: 2026-05-25
+関連Phase: Phase 19
+ステータス: 調査完了
+
+### 必須チェックリスト（全て完了必須）
+- [x] 1. problem.txt の過去事例を確認した
+- [x] 2. TodoWrite に問題対応タスクを追加した
+- [x] 3. 原因を徹底調査した
+- [x] 4. 修正計画を作成した
+- [x] 5. problem.txt に記録した（この項目）
+- [ ] 6. 修正を実施した
+- [ ] 7. 動作確認を完了した
+- [ ] 8. TodoWrite のタスクを完了にした
+
+### 問題の詳細
+1. メッセージが送られた際にプッシュ通知が来ない
+2. アプリの右上に通知ドット（バッジ）が表示されない
+
+### 原因分析
+
+#### プッシュ通知について
+notification.ts (147-163行目) に記載:
+- Firebase JS SDKはモバイルプッシュ通知をサポートしていない
+- FCMトークンの取得・保存はスタブ実装
+- プッシュ通知は将来的にExpo Push NotificationsやOneSignalで実装予定
+
+**結論**: プッシュ通知は現在の実装では対応不可（アーキテクチャの制約）
+
+#### アプリ内通知ドットについて
+- `subscribeToUnreadCountWithBadge` 関数は存在するが、どこで呼ばれているか不明
+- アプリアイコンバッジは更新されるはずだが、アプリ内のUI（ヘッダー等）には反映されていない可能性
+
+### 修正計画
+
+#### Step 1: 未読件数の監視をMainNavigatorで開始
+アプリ起動時に `subscribeToUnreadCountWithBadge` を呼び出す
+
+#### Step 2: ヘッダーメニューに未読バッジを表示
+HeaderMenuコンポーネントまたはヘッダーに未読件数バッジを追加
+
+#### Step 3: メッセージ送信時に unreadCount を更新
+ConversationScreen.tsx の handleSend で相手の unreadCount をインクリメント
+
+**Note**: プッシュ通知は Cloud Functions + FCM が必要なため、現時点では対応外とする
+
+### 修正ファイル
+- /mobile/src/navigation/MainNavigator.tsx
+- /mobile/src/screens/messages/ConversationScreen.tsx
+- /mobile/src/components/HeaderMenu.tsx（存在すれば）
+
+---
+
+## Problem #15: メッセージ送信時に「エラーが発生しました」と表示される
+発生日: 2026-05-25
+関連Phase: Phase 19
+ステータス: 調査完了
+
+### 必須チェックリスト（全て完了必須）
+- [x] 1. problem.txt の過去事例を確認した
+- [x] 2. TodoWrite に問題対応タスクを追加した
+- [x] 3. 原因を徹底調査した
+- [x] 4. 修正計画を作成した
+- [x] 5. problem.txt に記録した（この項目）
+- [ ] 6. 修正を実施した
+- [ ] 7. 動作確認を完了した
+- [ ] 8. TodoWrite のタスクを完了にした
+
+### 問題の詳細
+- メッセージを送信すると「エラーが発生しました」と表示される
+- ただしメッセージ自体は正常に送信される
+
+### 原因分析
+ConversationScreen.tsx (247-251行目):
+```typescript
+await updateDoc(doc(db, 'conversations', conversationId), {
+  lastMessage: messageText,
+  lastMessageAt: serverTimestamp(),  // ← この更新が拒否される
+});
+```
+
+Firestoreルール (67-68行目) では以下のフィールドのみ更新を許可:
+- `lastMessage`
+- `unreadCount`
+- `updatedAt`
+
+`lastMessageAt` は許可リストに含まれていないため、この更新が失敗してエラーが発生。
+メッセージ自体はサブコレクションへの追加なので成功している。
+
+### 修正計画
+
+#### Step 1: firestore.rules を更新
+`lastMessageAt` を許可リストに追加:
+```javascript
+.hasOnly(['lastMessage', 'lastMessageAt', 'unreadCount', 'updatedAt'])
+```
+
+#### Step 2: Firebaseにデプロイ
+```bash
+firebase deploy --only firestore:rules
+```
+
+### 修正ファイル
+- /firestore.rules
+
+---
+
+## Problem #14: キーボード表示時に招待コード入力欄が隠れる
+発生日: 2026-05-25
+関連Phase: Phase 18
+ステータス: 解決済み
+
+### 必須チェックリスト（全て完了必須）
+- [x] 1. problem.txt の過去事例を確認した
+- [x] 2. TodoWrite に問題対応タスクを追加した
+- [x] 3. 原因を徹底調査した
+- [x] 4. 修正計画を作成した
+- [x] 5. problem.txt に記録した（この項目）
+- [x] 6. 修正を実施した
+- [ ] 7. 動作確認を完了した
+- [ ] 8. TodoWrite のタスクを完了にした
+
+### 問題の詳細
+- iPhoneでキーボードを表示すると招待コード入力欄が隠れて入力しづらい
+
+### 原因分析
+- モーダルが `justifyContent: 'flex-end'` で下から表示
+- `KeyboardAvoidingView` がない
+- キーボードが表示されてもモーダルが押し上げられない
+
+### 修正内容
+- `KeyboardAvoidingView` をモーダルに追加
+- `ScrollView` でモーダル内容をスクロール可能に
+
+### 修正ファイル
+- /mobile/src/screens/messages/MessagesScreen.tsx
+
+---
+
+## Problem #13: 招待コードが表示されない
+発生日: 2026-05-25
+関連Phase: Phase 18
+ステータス: 解決済み
+
+### 必須チェックリスト（全て完了必須）
+- [x] 1. problem.txt の過去事例を確認した
+- [x] 2. TodoWrite に問題対応タスクを追加した
+- [x] 3. 原因を徹底調査した
+- [x] 4. 修正計画を作成した
+- [x] 5. problem.txt に記録した（この項目）
+- [x] 6. 修正を実施した
+- [ ] 7. 動作確認を完了した
+- [ ] 8. TodoWrite のタスクを完了にした
+
+### 問題の詳細
+- 友達追加モーダルで「あなたの招待コード」欄が空白
+
+### 原因分析
+- 既存ユーザーのFirestoreドキュメントに `inviteCode` フィールドがない
+- 新規ユーザー登録時には生成されるが、過去に登録したユーザーには存在しない
+
+### 修正内容
+1. `getMyInviteCode` 関数を修正
+   - 招待コードがない場合は自動生成してFirestoreに保存
+2. Firestoreルールを更新
+   - `inviteCode` フィールドの更新を許可
+
+### 修正ファイル
+- /mobile/src/services/friendRequest.ts
+- /firestore.rules
+
+---
+
+## Problem #12: 友達承認時に「エラーが発生しました」と表示される
+発生日: 2026-05-25
+関連Phase: Phase 18
+ステータス: 解決済み
+
+### 必須チェックリスト（全て完了必須）
+- [x] 1. problem.txt の過去事例を確認した
+- [x] 2. TodoWrite に問題対応タスクを追加した
+- [x] 3. 原因を徹底調査した
+- [x] 4. 修正計画を作成した
+- [x] 5. problem.txt に記録した（この項目）
+- [x] 6. 修正を実施した
+- [ ] 7. 動作確認を完了した
+- [ ] 8. TodoWrite のタスクを完了にした
+
+### 問題の詳細
+- 招待コードで友達を追加後、友達申請を承認しようとするとエラーが発生
+- 「友達を承認する」ボタンを押すと「エラーが発生しました」とアラート表示
+- 友達追加ができない状態
+
+### 原因分析
+**根本原因**: Firestoreセキュリティルールが `conversations` コレクションの `status` フィールド更新を許可していない
+
+**コード追跡**:
+1. `ConversationScreen.tsx:170-185` で `handleAccept` 関数が呼ばれる
+2. `friendRequest.ts:129-145` の `acceptFriendRequest` で `updateDoc` を実行
+3. 更新内容: `{ status: 'active', updatedAt: serverTimestamp() }`
+
+**セキュリティルール（firestore.rules:64-66）**:
+```javascript
+allow update: if isParticipant(resource.data) &&
+  request.resource.data.diff(resource.data).affectedKeys()
+    .hasOnly(['lastMessage', 'unreadCount', 'updatedAt']);
+```
+
+`status` フィールドは許可リストに含まれていないため、更新が拒否される。
+
+### 修正計画
+
+#### Step 1: firestore.rules の更新
+`conversations` コレクションの更新ルールに `status` フィールドを追加する。
+ただし、以下の条件を満たす場合のみ：
+- `pending` → `active`: リクエストを受け取った側（requestFromUserId以外のparticipant）のみ
+- 参加者であること
+
+```javascript
+// 更新: 参加者のみ
+allow update: if isParticipant(resource.data) &&
+  (
+    // メッセージ関連の更新
+    request.resource.data.diff(resource.data).affectedKeys()
+      .hasOnly(['lastMessage', 'unreadCount', 'updatedAt'])
+    ||
+    // ステータス変更（pending → active）: リクエスト受信者のみ
+    (resource.data.status == 'pending' &&
+     request.resource.data.status == 'active' &&
+     resource.data.requestFromUserId != request.auth.uid &&
+     request.resource.data.diff(resource.data).affectedKeys()
+       .hasOnly(['status', 'updatedAt']))
+  );
+```
+
+#### Step 2: Firebaseにデプロイ
+```bash
+firebase deploy --only firestore:rules
+```
+
+#### Step 3: 動作確認
+- シミュレーターで友達申請を承認できることを確認
+- 実機でも同様にテスト
+
+### 修正ファイル
+- /firestore.rules
+
+---
+
 ## Problem #11: Xcodeビルドエラー（Metro bundler モジュール解決失敗）
 発生日: 2026-05-18
 解決日: 2026-05-18

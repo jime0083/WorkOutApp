@@ -14,6 +14,9 @@ import {
   TextInput,
   Modal,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
@@ -324,54 +327,65 @@ export const MessagesScreen: React.FC = () => {
         transparent={true}
         onRequestClose={() => setShowAddFriendModal(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { paddingBottom: insets.bottom + spacing.xl }]}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>{t('friends.addFriend')}</Text>
-              <TouchableOpacity
-                onPress={() => setShowAddFriendModal(false)}
-                style={styles.modalCloseButton}
-              >
-                <Text style={styles.modalCloseText}>✕</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* 自分の招待コード */}
-            <View style={styles.myCodeSection}>
-              <Text style={styles.sectionLabel}>{t('friends.yourInviteCode')}</Text>
-              <View style={styles.codeDisplay}>
-                <Text style={styles.codeText}>{myInviteCode}</Text>
+        <KeyboardAvoidingView
+          style={styles.modalOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
+          <ScrollView
+            contentContainerStyle={styles.modalScrollContent}
+            keyboardShouldPersistTaps="handled"
+            bounces={false}
+          >
+            <View style={[styles.modalContent, { paddingBottom: insets.bottom + spacing.xl }]}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>{t('friends.addFriend')}</Text>
+                <TouchableOpacity
+                  onPress={() => setShowAddFriendModal(false)}
+                  style={styles.modalCloseButton}
+                >
+                  <Text style={styles.modalCloseText}>✕</Text>
+                </TouchableOpacity>
               </View>
-              <Text style={styles.codeHint}>{t('friends.shareCodeHint')}</Text>
-            </View>
 
-            {/* 招待コード入力 */}
-            <View style={styles.inputSection}>
-              <Text style={styles.sectionLabel}>{t('friends.enterInviteCode')}</Text>
-              <TextInput
-                style={styles.codeInput}
-                placeholder={t('friends.inviteCodePlaceholder')}
-                placeholderTextColor={colors.lineDark.textTertiary}
-                value={inviteCodeInput}
-                onChangeText={setInviteCodeInput}
-                autoCapitalize="characters"
-                maxLength={8}
-              />
-              <TouchableOpacity
-                style={[
-                  styles.searchButton,
-                  (!inviteCodeInput.trim() || isSearching) && styles.searchButtonDisabled,
-                ]}
-                onPress={handleSearchByInviteCode}
-                disabled={!inviteCodeInput.trim() || isSearching}
-              >
-                <Text style={styles.searchButtonText}>
-                  {isSearching ? t('common.searching') : t('friends.sendRequest')}
-                </Text>
-              </TouchableOpacity>
+              {/* 自分の招待コード */}
+              <View style={styles.myCodeSection}>
+                <Text style={styles.sectionLabel}>{t('friends.yourInviteCode')}</Text>
+                <View style={styles.codeDisplay}>
+                  <Text style={styles.codeText}>
+                    {myInviteCode || t('common.loading')}
+                  </Text>
+                </View>
+                <Text style={styles.codeHint}>{t('friends.shareCodeHint')}</Text>
+              </View>
+
+              {/* 招待コード入力 */}
+              <View style={styles.inputSection}>
+                <Text style={styles.sectionLabel}>{t('friends.enterInviteCode')}</Text>
+                <TextInput
+                  style={styles.codeInput}
+                  placeholder={t('friends.inviteCodePlaceholder')}
+                  placeholderTextColor={colors.lineDark.textTertiary}
+                  value={inviteCodeInput}
+                  onChangeText={setInviteCodeInput}
+                  autoCapitalize="characters"
+                  maxLength={8}
+                />
+                <TouchableOpacity
+                  style={[
+                    styles.searchButton,
+                    (!inviteCodeInput.trim() || isSearching) && styles.searchButtonDisabled,
+                  ]}
+                  onPress={handleSearchByInviteCode}
+                  disabled={!inviteCodeInput.trim() || isSearching}
+                >
+                  <Text style={styles.searchButtonText}>
+                    {isSearching ? t('common.searching') : t('friends.sendRequest')}
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
-          </View>
-        </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
@@ -581,6 +595,9 @@ const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
+  },
+  modalScrollContent: {
+    flexGrow: 1,
     justifyContent: 'flex-end',
   },
   modalContent: {

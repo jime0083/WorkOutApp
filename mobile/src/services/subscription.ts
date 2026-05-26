@@ -61,11 +61,13 @@ let purchaseErrorSubscription: { remove: () => void } | null = null;
  */
 export async function initializeIAP(): Promise<boolean> {
   try {
+    console.log('[IAP] Initializing connection...');
     const result = await initConnection();
-    console.log('IAP connection initialized:', result);
+    console.log('[IAP] Connection initialized:', result);
     return true;
-  } catch (error) {
-    console.error('Failed to initialize IAP connection:', error);
+  } catch (error: any) {
+    console.error('[IAP] Failed to initialize connection:', error);
+    console.error('[IAP] Init error details:', JSON.stringify(error, null, 2));
     return false;
   }
 }

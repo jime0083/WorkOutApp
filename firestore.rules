@@ -42,7 +42,7 @@ service cloud.firestore {
       // 更新: 自分自身のみ、かつ変更可能フィールドのみ
       allow update: if isOwner(userId) &&
         request.resource.data.diff(resource.data).affectedKeys()
-          .hasOnly(['nickname', 'profileImageUrl', 'fcmToken', 'updatedAt', 'lastLoginAt']);
+          .hasOnly(['nickname', 'profileImageUrl', 'fcmToken', 'updatedAt', 'lastLoginAt', 'inviteCode']);
 
       // 削除: Cloud Functions経由のみ
       allow delete: if false;
@@ -60,10 +60,20 @@ service cloud.firestore {
         request.auth.uid in request.resource.data.participantIds &&
         request.resource.data.participantIds.size() == 2;
 
-      // 更新: 参加者のみ（lastMessage, unreadCount, updatedAtの更新）
+      // 更新: 参加者のみ
       allow update: if isParticipant(resource.data) &&
-        request.resource.data.diff(resource.data).affectedKeys()
-          .hasOnly(['lastMessage', 'unreadCount', 'updatedAt']);
+        (
+          // メッセージ関連の更新
+          request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['lastMessage', 'lastMessageAt', 'unreadCount', 'updatedAt'])
+          ||
+          // ステータス変更（pending → active）: リクエスト受信者のみ承認可能
+          (resource.data.status == 'pending' &&
+           request.resource.data.status == 'active' &&
+           resource.data.requestFromUserId != request.auth.uid &&
+           request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['status', 'updatedAt']))
+        );
 
       // 削除: 不可（パニック削除はCloud Functions経由）
       allow delete: if false;
@@ -143,6 +153,15 @@ service cloud.firestore {
 
       // 作成・更新・削除: Cloud Functions経由のみ
       allow create, update, delete: if false;
+    }
+
+    // ============================================
+    // collectionGroup クエリ用ルール
+    // ============================================
+    // 自分が送信したメッセージのカウント用（月間メッセージ制限）
+    match /{path=**}/messages/{messageId} {
+      allow read: if isAuthenticated() &&
+        resource.data.senderId == request.auth.uid;
     }
   }
 }

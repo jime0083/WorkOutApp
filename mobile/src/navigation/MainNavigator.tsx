@@ -23,6 +23,8 @@ import {
 import { SubscriptionScreen } from '../screens/subscription';
 import { NotificationPermissionScreen } from '../screens/notification/NotificationPermissionScreen';
 import { useSubscriptionStore } from '../stores/subscriptionStore';
+import { useAuthStore } from '../stores/authStore';
+import { subscribeToUnreadCountWithBadge } from '../services/unreadCount';
 
 const Stack = createNativeStackNavigator<MainStackParamList>();
 const Tab = createBottomTabNavigator<DummyTabParamList>();
@@ -89,11 +91,21 @@ export const MainNavigator: React.FC = () => {
     isLoading,
     initialize,
   } = useSubscriptionStore();
+  const { user } = useAuthStore();
 
   // サブスクリプション選択状態を初期化
   useEffect(() => {
     initialize();
   }, [initialize]);
+
+  // 未読件数を監視してアプリアイコンバッジを更新
+  useEffect(() => {
+    if (!user) return;
+
+    const unsubscribe = subscribeToUnreadCountWithBadge(user.uid);
+
+    return () => unsubscribe();
+  }, [user]);
 
   // ローディング中は何も表示しない
   if (isLoading) {

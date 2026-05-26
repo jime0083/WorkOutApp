@@ -34,7 +34,18 @@
       "Bash(git -C /Users/jime0083/WorkOutApp log --all --full-history -- progress.txt mobile/progress.txt **/progress.txt)",
       "Bash(git -C /Users/jime0083/WorkOutApp show HEAD:progress.txt)",
       "Bash(git -C /Users/jime0083/WorkOutApp checkout HEAD -- progress.txt)",
-      "Bash(npx react-native:*)"
+      "Bash(npx react-native:*)",
+      "Bash(xcrun simctl list:*)",
+      "Bash(npm start)",
+      "Bash(lsof:*)",
+      "Bash(xcrun simctl terminate:*)",
+      "Bash(xcrun simctl launch:*)",
+      "Bash(xargs kill:*)",
+      "Bash(log show --predicate 'subsystem == \"\"\"\"com.okiroya.workoutapp\"\"\"\"' --last 5m)",
+      "Bash(xcrun simctl:*)",
+      "Bash(open:*)",
+      "Bash(claude session save workout)",
+      "Bash(killall:*)"
     ]
   }
 }

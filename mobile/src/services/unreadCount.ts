@@ -29,18 +29,29 @@ export function subscribeToUnreadCount(
     where('participantIds', 'array-contains', userId)
   );
 
-  return onSnapshot(q, (snapshot) => {
-    let totalUnread = 0;
+  console.log('[UnreadCount] Setting up subscription for user:', userId);
 
-    snapshot.docs.forEach((docSnap) => {
-      const data = docSnap.data();
-      const unreadCount = data.unreadCount || {};
-      // 自分の未読件数を加算
-      totalUnread += unreadCount[userId] || 0;
-    });
+  return onSnapshot(
+    q,
+    (snapshot) => {
+      let totalUnread = 0;
 
-    callback(totalUnread);
-  });
+      snapshot.docs.forEach((docSnap) => {
+        const data = docSnap.data();
+        const unreadCount = data.unreadCount || {};
+        const userUnread = unreadCount[userId] || 0;
+        console.log('[UnreadCount] Conversation', docSnap.id, 'unread:', userUnread);
+        // 自分の未読件数を加算
+        totalUnread += userUnread;
+      });
+
+      console.log('[UnreadCount] Total unread:', totalUnread);
+      callback(totalUnread);
+    },
+    (error) => {
+      console.error('[UnreadCount] Query error:', error.code, error.message);
+    }
+  );
 }
 
 /**
@@ -53,7 +64,10 @@ export function subscribeToUnreadCountWithBadge(
   userId: string,
   callback?: (count: number) => void
 ): () => void {
+  console.log('[UnreadCountBadge] Starting badge subscription for user:', userId);
+
   return subscribeToUnreadCount(userId, async (count) => {
+    console.log('[UnreadCountBadge] Updating badge to:', count);
     // アプリアイコンバッジを更新
     await setAppBadgeCount(count);
 

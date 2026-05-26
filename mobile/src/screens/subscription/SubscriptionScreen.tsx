@@ -109,17 +109,12 @@ export const SubscriptionScreen: React.FC = () => {
           fullError: JSON.stringify(error, null, 2),
         });
         setIsPurchasing(false);
-        // ユーザーがキャンセルした場合はアラートを表示しない
-        const errorCode = String(error.code);
-        console.log('[IAP] Error code string:', errorCode);
-        if (!errorCode.includes('CANCEL') && !errorCode.includes('Cancel')) {
-          Alert.alert(
-            t('subscription.purchaseErrorTitle'),
-            `${t('subscription.purchaseErrorMessage')}\n\nDebug: code=${error.code}, msg=${error.message}`
-          );
-        } else {
-          console.log('[IAP] User cancelled purchase, not showing alert');
-        }
+
+        // デバッグ用: 全てのエラーを表示（原因特定のため）
+        Alert.alert(
+          'DEBUG: Purchase Error Details',
+          `code: ${error.code}\nmessage: ${error.message}\nresponseCode: ${(error as any).responseCode}\nproductId: ${(error as any).productId}\n\nFull error: ${JSON.stringify(error, null, 2).substring(0, 500)}`
+        );
       }
     );
     console.log('[IAP] Purchase listeners set up');
@@ -137,9 +132,18 @@ export const SubscriptionScreen: React.FC = () => {
       const initResult = await initializeIAP();
       console.log('[IAP] IAP initialized:', initResult);
 
+      // デバッグ用: 初期化結果を表示
+      Alert.alert('DEBUG: IAP Init', `initializeIAP result: ${initResult}`);
+
       console.log('[IAP] Fetching subscription products...');
       const products = await getSubscriptionProducts();
       console.log('[IAP] Products fetched:', JSON.stringify(products, null, 2));
+
+      // デバッグ用: 取得した商品を表示
+      Alert.alert(
+        'DEBUG: Products Loaded',
+        `Found ${products?.length || 0} products:\n${products?.map(p => `${p.productId}: ${p.price}`).join('\n') || 'None'}`
+      );
 
       if (products && products.length > 0) {
         products.forEach((product) => {
@@ -157,7 +161,9 @@ export const SubscriptionScreen: React.FC = () => {
       const errorMessage = error instanceof Error ? error.message : String(error);
       console.error('[IAP] Failed to load products:', errorMessage);
       console.error('[IAP] Full error:', JSON.stringify(error, null, 2));
-      // フォールバック価格を使用
+
+      // デバッグ用: エラーを表示
+      Alert.alert('DEBUG: Load Products Error', errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -224,24 +230,30 @@ export const SubscriptionScreen: React.FC = () => {
         ? 'com.okiroya.workoutapp.subscription.yearly'
         : 'com.okiroya.workoutapp.subscription.monthly';
 
+      // デバッグ用: 購入開始を確認
+      Alert.alert('DEBUG: Purchase Start', `Requesting purchase for:\n${productId}`);
+
       console.log('[IAP] Requesting purchase for productId:', productId);
       // 購入リクエストを開始（結果は purchaseUpdatedListener で受け取る）
       await purchaseSubscription(productId);
       console.log('[IAP] Purchase request sent successfully');
-      // 購入ダイアログが表示されるので、ここでは何もしない
-      // 購入結果は setupPurchaseListeners で設定したコールバックで処理される
+
+      // デバッグ用: リクエスト送信成功
+      Alert.alert('DEBUG: Request Sent', 'purchaseSubscription() completed without error.\nWaiting for listener callback...');
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      const errorObj = error as { code?: string; message?: string };
+      const errorObj = error as { code?: string; message?: string; responseCode?: number };
       console.error('[IAP] Purchase request error:', {
         message: errorMessage,
         code: errorObj?.code,
         fullError: JSON.stringify(error, null, 2),
       });
       setIsPurchasing(false);
+
+      // デバッグ用: 詳細なエラー情報を表示
       Alert.alert(
-        t('subscription.purchaseErrorTitle'),
-        `${t('subscription.purchaseErrorMessage')}\n\nDebug: ${errorMessage}`
+        'DEBUG: Purchase Request Error',
+        `message: ${errorMessage}\ncode: ${errorObj?.code}\nresponseCode: ${errorObj?.responseCode}\n\nFull: ${JSON.stringify(error, null, 2).substring(0, 500)}`
       );
     }
     // 注意: setIsPurchasing(false) は購入リスナーのコールバックで行う

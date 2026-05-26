@@ -222,16 +222,46 @@ export function subscribeToConversations(
 }
 
 /**
- * 自分の招待コードを取得
+ * ランダムな招待コードを生成（8文字の英数字）
+ */
+function generateInviteCode(): string {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // 紛らわしい文字(0,O,1,I)を除外
+  let result = '';
+  for (let i = 0; i < 8; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+}
+
+/**
+ * 自分の招待コードを取得（ない場合は生成して保存）
  */
 export async function getMyInviteCode(userId: string): Promise<string | null> {
   const db = getFirestoreInstance();
   const userRef = doc(db, 'users', userId);
-  const userDoc = await getDoc(userRef);
+  const userDocSnap = await getDoc(userRef);
 
-  if (!userDoc.exists()) {
+  if (!userDocSnap.exists()) {
     return null;
   }
 
-  return userDoc.data().inviteCode || null;
+  const userData = userDocSnap.data();
+
+  // 招待コードが既にある場合はそれを返す
+  if (userData.inviteCode) {
+    return userData.inviteCode;
+  }
+
+  // 招待コードがない場合は生成して保存
+  const newInviteCode = generateInviteCode();
+  try {
+    await updateDoc(userRef, {
+      inviteCode: newInviteCode,
+      updatedAt: serverTimestamp(),
+    });
+    return newInviteCode;
+  } catch (error) {
+    console.error('Error creating invite code:', error);
+    return null;
+  }
 }

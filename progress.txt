@@ -228,6 +228,67 @@
 
 ---
 
+## Phase 19: メッセージ機能の不具合修正（Problem #15, #16, #17）
+関連: problem.txt Problem #15, #16, #17
+前提: Phase 18 完了後
+**優先度: 高**
+
+### 19.1 Problem #15: メッセージ送信時のエラー表示修正
+- [x] 19.1.1 firestore.rules - `lastMessageAt` を許可フィールドに追加 [完了: 2026-05-25]
+- [x] 19.1.2 firebase deploy --only firestore:rules [完了: 2026-05-25]
+- [ ] 19.1.3 動作確認（エラー表示が消えることを確認）
+
+### 19.2 Problem #17: 残りメッセージ回数が変化しない問題の修正
+- [x] 19.2.1 ConversationScreen.tsx - collectionGroup を使用したクエリに変更 [完了: 2026-05-25]
+- [x] 19.2.2 firestore.indexes.json - collectionGroup インデックス追加 [完了: 2026-05-25]
+- [x] 19.2.3 firestore.rules - collectionGroup 読み取りルール追加 [完了: 2026-05-25]
+- [x] 19.2.4 firebase deploy でインデックスとルールをデプロイ [完了: 2026-05-25]
+- [ ] 19.2.5 動作確認（メッセージ送信で残り回数が減ることを確認）
+
+### 19.3 Problem #16: 通知ドット・アプリバッジの修正
+- [x] 19.3.1 ConversationScreen.tsx - メッセージ送信時に相手のunreadCountをインクリメント [完了: 2026-05-25]
+- [x] 19.3.2 MainNavigator.tsx - subscribeToUnreadCountWithBadge 呼び出し追加 [完了: 2026-05-25]
+- [ ] 19.3.3 動作確認（アプリアイコンバッジが更新されることを確認）
+- [ ] 19.3.4 ヘッダーに未読バッジを追加（オプション）
+
+### 19.4 ビルド・動作確認
+- [x] 19.4.1 TypeScript型チェック（npx tsc --noEmit） [完了: 2026-05-25]
+- [x] 19.4.2 iOSビルド確認 [完了: 2026-05-25]
+- [ ] 19.4.3 シミュレーター/実機動作確認
+- [ ] 19.4.4 problem.txt 更新（Problem #15, #16, #17 を解決済みに変更）
+
+---
+
+## Phase 20: IAP課金テストの修正（Problem #19）
+関連: problem.txt Problem #19
+前提: Phase 19 完了後
+**優先度: 高**
+
+### 問題概要
+シミュレーターでSandboxアカウントを使用してIAP課金テストを行うと、
+「user-cancelled, Request Cancelled」エラーが発生し購入処理が完了しない。
+
+### 20.1 StoreKit Configuration ファイル作成（方法A）
+- [ ] 20.1.1 Xcodeで Products.storekit ファイル作成
+- [ ] 20.1.2 月額商品 (com.okiroya.workoutapp.subscription.monthly) 追加
+- [ ] 20.1.3 年額商品 (com.okiroya.workoutapp.subscription.yearly) 追加
+- [ ] 20.1.4 Xcodeスキーム設定でStoreKit Configuration有効化
+- [ ] 20.1.5 シミュレーターでローカルテスト実行
+
+### 20.2 実機テスト（方法B - 代替手段）
+- [ ] 20.2.1 実機をMacに接続
+- [ ] 20.2.2 デバイスの設定 > App Store > Sandboxアカウントでサインイン
+- [ ] 20.2.3 Xcodeから実機にアプリをインストール
+- [ ] 20.2.4 Sandboxアカウントで課金テスト実行
+
+### 20.3 動作確認
+- [ ] 20.3.1 月額プラン購入テスト
+- [ ] 20.3.2 年額プラン購入テスト
+- [ ] 20.3.3 購入後のプレミアム状態確認
+- [ ] 20.3.4 problem.txt 更新（Problem #19 を解決済みに変更）
+
+---
+
 ## ============================================
 ## 以下のPhaseは新規タスク追加時も常に最後に配置
 ## ============================================
