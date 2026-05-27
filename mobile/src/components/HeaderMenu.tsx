@@ -27,6 +27,7 @@ export const HeaderMenu: React.FC = () => {
   const [isMenuVisible, setIsMenuVisible] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const userDocument = useAuthStore((state) => state.userDocument);
+  const logout = useAuthStore((state) => state.logout);
 
   // 未読件数をリアルタイムで監視（アプリアイコンバッジも自動更新）
   useEffect(() => {
@@ -62,6 +63,12 @@ export const HeaderMenu: React.FC = () => {
     navigation.navigate('Subscription');
   }, [closeMenu, navigation]);
 
+  const handleLogoutPress = useCallback(async () => {
+    closeMenu();
+    await logout();
+    // ログアウト後はRootNavigatorが自動的に認証画面に遷移する
+  }, [closeMenu, logout]);
+
   return (
     <>
       <TouchableOpacity
@@ -86,7 +93,6 @@ export const HeaderMenu: React.FC = () => {
               onPress={handleUpdatePress}
               activeOpacity={1}
             >
-              <Text style={styles.menuItemIcon}>🔔</Text>
               <Text style={styles.menuItemText}>{t('menu.update')}</Text>
               {unreadCount > 0 && (
                 <View style={styles.badge}>
@@ -102,7 +108,6 @@ export const HeaderMenu: React.FC = () => {
               style={styles.menuItem}
               onPress={handlePlanChangePress}
             >
-              <Text style={styles.menuItemIcon}>💎</Text>
               <Text style={styles.menuItemText}>{t('menu.changePlan')}</Text>
             </TouchableOpacity>
 
@@ -111,8 +116,15 @@ export const HeaderMenu: React.FC = () => {
               style={styles.menuItem}
               onPress={handleSettingsPress}
             >
-              <Text style={styles.menuItemIcon}>⚙️</Text>
               <Text style={styles.menuItemText}>{t('common.settings')}</Text>
+            </TouchableOpacity>
+
+            {/* ログアウト */}
+            <TouchableOpacity
+              style={[styles.menuItem, styles.menuItemLast]}
+              onPress={handleLogoutPress}
+            >
+              <Text style={[styles.menuItemText, styles.logoutText]}>{t('common.logout')}</Text>
             </TouchableOpacity>
           </View>
         </Pressable>
@@ -143,7 +155,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginTop: 80,
     marginRight: spacing.md,
-    minWidth: 200,
+    minWidth: 240,
     shadowColor: colors.black,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
@@ -154,32 +166,34 @@ const styles = StyleSheet.create({
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: spacing.md,
+    padding: spacing.lg + spacing.xs, // 1.5倍: 12 * 1.5 = 18 ≈ 16 + 4 = 20
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
   },
-  menuItemIcon: {
-    fontSize: 20,
-    marginRight: spacing.sm,
+  menuItemLast: {
+    borderBottomWidth: 0,
   },
   menuItemText: {
     flex: 1,
-    fontSize: typography.sizes.md,
+    fontSize: Math.round(typography.sizes.md * 1.5), // 1.5倍: 15 * 1.5 = 22.5 ≈ 23
     color: colors.text.primary,
     fontWeight: typography.weights.medium as '500',
   },
+  logoutText: {
+    color: colors.error,
+  },
   badge: {
     backgroundColor: colors.error,
-    borderRadius: 10,
-    minWidth: 20,
-    height: 20,
-    paddingHorizontal: 6,
+    borderRadius: 12,
+    minWidth: 28,
+    height: 28,
+    paddingHorizontal: 8,
     justifyContent: 'center',
     alignItems: 'center',
   },
   badgeText: {
     color: colors.white,
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
   },
 });

@@ -45,7 +45,9 @@
       "Bash(xcrun simctl:*)",
       "Bash(open:*)",
       "Bash(claude session save workout)",
-      "Bash(killall:*)"
+      "Bash(killall:*)",
+      "WebFetch(domain:sarunw.com)",
+      "WebFetch(domain:community.revenuecat.com)"
     ]
   }
 }

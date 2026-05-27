@@ -1,9 +1,295 @@
 # Health Manager アプリ 問題管理
 
+## Problem #21: Sandbox IAPパーミッションエラー（App Store Connect設定問題）
+発生日: 2026-05-26
+関連Phase: Phase 20
+ステータス: 手動作業待ち
+
+### 必須チェックリスト（全て完了必須）
+- [x] 1. problem.txt の過去事例を確認した
+- [x] 2. TodoWrite に問題対応タスクを追加した
+- [x] 3. 原因を徹底調査した（多角的調査実施）
+- [x] 4. 修正計画を作成した
+- [x] 5. problem.txt に記録した（この項目）
+- [x] 6. 修正を実施した（コード修正完了）
+- [ ] 7. 動作確認を完了した（手動設定後に実機テスト）
+- [ ] 8. TodoWrite のタスクを完了にした
+
+### 実機テスト結果（2026-05-27）
+
+**エラー内容:**
+```
+code: purchase-error
+message: Unable to Complete Request
+日本語: 「現在サンドボックスでInApp購入を行う権限がありません」
+詳細: 「このApple Accountには、アプリ内課金を行う権限がありません」
+Environment: Sandbox
+```
+
+**追加調査結果（Web検索）:**
+
+参照: [Sarunw - How to fix IAP sandbox error](https://sarunw.com/posts/how-to-fix-you-are-not-authorized-to-make-purchases-of-this-inapp-in-sandbox-at-this-time-error/)
+
+**根本原因:**
+1. **XcodeでIn-App Purchase Capabilityが追加されていない**
+2. **Sandboxテスターが正しいチームに登録されていない**
+3. **Paid Applications Agreementが未完了の可能性**
+
+**これはコードの問題ではなく、App Store Connect / Xcodeの設定問題です。**
+
+### 問題の詳細
+- 実機でサブスク購入を試行
+- エラー: 「現在サンドボックスでInApp購入を行う権限がありません」
+- 設定 > App Store に「サンドボックスアカウント」セクションが表示されない
+- Team ID (GK79P6R4DF) は正しい
+
+### 原因分析（徹底調査結果）
+
+#### 調査方法
+1. エラーメッセージの詳細分析
+2. Xcode設定ファイルの確認
+3. project.pbxprojの確認
+4. Web検索で同様のエラー事例を調査
+5. Apple公式ドキュメント確認
+
+#### 発見した問題
+
+**【根本原因】Entitlementsファイルが存在しない**
+
+| 確認項目 | 結果 | 問題 |
+|---------|------|------|
+| WorkOutAppMobile.entitlements | 存在しない | ⚠️ 致命的 |
+| CODE_SIGN_ENTITLEMENTS | 設定なし | ⚠️ 致命的 |
+| StoreKit.framework | リンク済み | ✅ OK |
+| DEVELOPMENT_TEAM | GK79P6R4DF | ✅ OK |
+| PRODUCT_BUNDLE_IDENTIFIER | com.okiroya.workoutapp | ✅ OK |
+
+**なぜこれが問題か:**
+- XcodeでIn-App Purchase Capabilityを追加すると通常：
+  1. `.entitlements`ファイルが自動生成される
+  2. `CODE_SIGN_ENTITLEMENTS`がビルド設定に追加される
+- 両方とも存在しないため、**In-App Purchase Capabilityは実際には有効になっていない**
+- サンドボックステスターとして認識されないため、「権限がありません」エラーが発生
+
+**【追加問題】GoogleService-Info.plistのBundle IDミスマッチ**
+- 現在: `com.yourcompany.workoutapp`
+- 正しい値: `com.okiroya.workoutapp`
+（これは直接IAPには影響しないが、修正すべき）
+
+### 修正計画
+
+#### Step 1: Entitlementsファイルの作成
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>com.apple.developer.in-app-payments</key>
+    <array/>
+</dict>
+</plist>
+```
+
+#### Step 2: project.pbxprojの更新
+- Entitlementsファイルへの参照を追加
+- CODE_SIGN_ENTITLEMENTSを設定
+
+#### Step 3: GoogleService-Info.plistのBundle ID修正
+- `com.yourcompany.workoutapp` → `com.okiroya.workoutapp`
+
+#### Step 4: ビルドと再テスト
+- クリーンビルド実行
+- 実機でサブスク購入テスト
+
+### 修正ファイル
+- mobile/ios/WorkOutAppMobile/WorkOutAppMobile.entitlements（新規作成）
+- mobile/ios/WorkOutAppMobile.xcodeproj/project.pbxproj
+- mobile/ios/GoogleService-Info.plist
+
+### 実施した修正内容
+
+#### Phase 1（2026-05-26 19:25）
+1. **Entitlementsファイルの作成**
+   - `WorkOutAppMobile.entitlements`を新規作成
+   - ⚠️ 誤って`com.apple.developer.in-app-payments`（Apple Pay用）を設定
+
+2. **project.pbxprojの更新**
+   - EntitlementsファイルへのPBXFileReference追加
+   - WorkOutAppMobileグループにEntitlementsファイルを追加
+   - Debug/Release両方のビルド設定に`CODE_SIGN_ENTITLEMENTS`を追加
+
+3. **GoogleService-Info.plistのBundle ID修正**
+   - 修正前: `com.yourcompany.workoutapp`
+   - 修正後: `com.okiroya.workoutapp`
+
+#### Phase 2（2026-05-27）- 追加修正
+**発見した問題:**
+- `com.apple.developer.in-app-payments`はApple Pay用のキー
+- **In-App Purchaseには専用のentitlementキーは不要**
+- In-App PurchaseはXcodeでCapabilityを追加することでプロビジョニングプロファイルで管理される
+
+**実施した修正:**
+1. Entitlementsファイルを空のdict状態に修正
+2. TypeScript型チェック: ✅ PASSED
+3. iOSビルド: ✅ BUILD SUCCEEDED
+
+### ⚠️ 必須手動作業チェックリスト（2026-05-27更新）
+
+**以下の全ての項目を順番に確認・実施してください：**
+
+#### 1. Xcode設定（必須）
+- [ ] **In-App Purchase Capabilityを追加**
+  1. Xcodeで `mobile/ios/WorkOutAppMobile.xcworkspace` を開く
+  2. プロジェクトナビゲーターでWorkOutAppMobileを選択
+  3. TARGETSから「WorkOutAppMobile」を選択
+  4. 「Signing & Capabilities」タブをクリック
+  5. 「+ Capability」ボタンをクリック
+  6. 「In-App Purchase」を検索して追加
+  7. ⚠️ **この操作でEntitlementsファイルが自動更新される**
+
+#### 2. App Store Connect設定（必須）
+- [ ] **Paid Applications Agreement確認**
+  1. [App Store Connect](https://appstoreconnect.apple.com) にログイン
+  2. 「契約/税金/銀行口座情報」を確認
+  3. 「Paid Applications」契約が「Active」であることを確認
+  4. 銀行口座・税務情報が設定済みであることを確認
+
+- [ ] **Sandboxテスターを正しいチームに作成**
+  1. [App Store Connect](https://appstoreconnect.apple.com) にログイン
+  2. **⚠️ 重要: Team ID `GK79P6R4DF` のアカウントであることを確認**
+  3. 「ユーザーとアクセス」→「Sandbox」タブ
+  4. 「テスター」セクションで「+」ボタンをクリック
+  5. 新しいテストアカウントを作成（既存のApple IDは使用不可）
+
+- [ ] **In-App Purchaseが「送信準備完了」であることを確認**
+  1. App Store Connect → アプリ → App内課金
+  2. 各サブスクリプションのステータスが「送信準備完了」以上であること
+
+#### 3. 実機設定（必須）
+- [ ] **Sandboxアカウントでサインイン**
+  1. iPhoneの「設定」アプリを開く
+  2. 「App Store」をタップ
+  3. 下部の「SANDBOX ACCOUNT」セクションを確認
+  4. 上記で作成したSandboxテスターアカウントでサインイン
+  5. ⚠️ 通常のApple IDではなくSandbox用アカウントを使用
+
+#### 4. ビルドとテスト
+- [ ] Xcodeでクリーンビルド（Product → Clean Build Folder）
+- [ ] 実機にインストール
+- [ ] サブスク購入テスト
+
+### 以前の修正内容（参考）
+
+#### Phase 1（2026-05-26 19:25）
+
+2. **In-App Purchase Capabilityを追加**
+   - 左のナビゲーターでWorkOutAppMobileプロジェクトを選択
+   - TARGETSから「WorkOutAppMobile」を選択
+   - 「Signing & Capabilities」タブを開く
+   - 「+ Capability」ボタンをクリック
+   - 「In-App Purchase」を検索して追加
+
+3. **実機でビルド & テスト**
+   - 実機を接続
+   - Product > Build（Cmd+B）
+   - Product > Run（Cmd+R）
+   - サブスク購入画面でテスト
+
+### 重要な注意事項
+- シミュレーターではIAPテストは不安定（Problem #19参照）
+- **必ず実機でテストすること**
+- Sandboxテスターアカウントで設定 > App Store にログインが必要
+
+---
+
+## Problem #22: ログイン画面で「登録に失敗しました」と表示される
+発生日: 2026-05-26
+解決日: 2026-05-26
+関連Phase: Phase 20
+ステータス: 解決済み
+
+### 必須チェックリスト（全て完了必須）
+- [x] 1. problem.txt の過去事例を確認した
+- [x] 2. TodoWrite に問題対応タスクを追加した
+- [x] 3. 原因を徹底調査した
+- [x] 4. 修正計画を作成した
+- [x] 5. problem.txt に記録した（この項目）
+- [x] 6. 修正を実施した
+- [x] 7. 動作確認を完了した
+- [x] 8. TodoWrite のタスクを完了にした
+
+### 問題の詳細
+- ログアウト後に再ログインを試行
+- エラーダイアログ: 「登録に失敗しました」「Firebase Error (auth): invalid-credential(s).」
+- ログイン画面なのに「登録に失敗しました」と表示される
+
+### 原因分析
+1. LoginScreen.tsx:83 で誤った翻訳キーを使用
+   - 誤: `t('auth.registerFailed')` （登録失敗）
+   - 正: `t('auth.loginFailed')` （ログイン失敗）
+2. `loginFailed` の翻訳キーが ja.json / en.json に存在しなかった
+
+### 採用した解決策
+1. ja.json に `loginFailed` と `loginError` を追加
+2. en.json に `loginFailed` と `loginError` を追加
+3. LoginScreen.tsx のエラーメッセージを `t('auth.loginFailed')` に修正
+
+### 修正ファイル
+- src/i18n/locales/ja.json
+- src/i18n/locales/en.json
+- src/screens/auth/LoginScreen.tsx
+
+### 学んだこと
+- ログイン画面と登録画面で異なるエラーメッセージを使用する
+- 新機能追加時は対応する翻訳キーも追加する
+
+### Note
+`invalid-credential` エラー自体は、メールアドレスまたはパスワードが
+正しくない場合に発生するFirebase Authの標準エラー。
+ユーザーが正しい認証情報を入力しているか確認が必要。
+
+---
+
+## Problem #20: Xcodeビルドエラー（database is locked）
+発生日: 2026-05-26
+解決日: 2026-05-26
+関連Phase: Phase 20
+ステータス: 解決済み
+
+### 必須チェックリスト（全て完了必須）
+- [x] 1. problem.txt の過去事例を確認した
+- [x] 2. TodoWrite に問題対応タスクを追加した
+- [x] 3. 原因を徹底調査した
+- [x] 4. 修正計画を作成した
+- [x] 5. problem.txt に記録した（この項目）
+- [x] 6. 修正を実施した
+- [x] 7. 動作確認を完了した
+- [x] 8. TodoWrite のタスクを完了にした
+
+### 問題の詳細
+- 実機ビルド時にXcodeでエラー発生
+- エラー: `error: accessing build database '...': database is locked`
+- `Unable to rename temporary...`
+
+### 原因分析
+- 複数のビルドプロセス（CLIとXcode）が同時に実行され競合
+- DerivedDataのビルドデータベースがロック状態
+
+### 採用した解決策
+1. Xcode, xcodebuild, Simulatorプロセスを全て終了
+2. DerivedDataとModuleCacheを削除
+3. Xcodeを再起動
+
+### 学んだこと
+- CLIビルドとXcodeビルドを同時に実行しない
+- ビルドエラー時はDerivedDataクリーンアップが有効
+
+---
+
 ## Problem #19: IAP課金テストが失敗する（user-cancelled）
 発生日: 2026-05-26
 関連Phase: Phase 20
-ステータス: 調査完了（App Store Connect設定確認待ち）
+ステータス: 実機テスト待ち
 
 ### 必須チェックリスト（全て完了必須）
 - [x] 1. problem.txt の過去事例を確認した
@@ -11,9 +297,20 @@
 - [x] 3. 原因を徹底調査した（デバッグAlertで実証）
 - [x] 4. 修正計画を作成した
 - [x] 5. problem.txt に記録した（この項目）
-- [ ] 6. 修正を実施した
-- [ ] 7. 動作確認を完了した
+- [x] 6. 修正を実施した（App Store Connect設定完了）
+- [ ] 7. 動作確認を完了した（実機テスト待ち）
 - [ ] 8. TodoWrite のタスクを完了にした
+
+### 追加調査結果（2026-05-26 15:22）
+App Store Connect設定完了後もシミュレーターで同じエラーが発生。
+
+**実証された事実:**
+- App Store Connect: サブスクリプション「送信準備完了」✅
+- シミュレーター: 依然として`user-cancelled`エラー
+
+**結論:**
+シミュレーターでのSandbox IAP テストは不安定/非対応。
+**実機でのテストが必要。**
 
 ### 問題の詳細
 - 課金テストを実行

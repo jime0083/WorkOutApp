@@ -65,7 +65,9 @@
     "accountCreated": "Account created. Please login.",
     "accountCreatedSelectPlan": "Account created. Please select a plan.",
     "registerFailed": "Registration failed",
-    "registerError": "An error occurred during registration"
+    "registerError": "An error occurred during registration",
+    "loginFailed": "Login failed",
+    "loginError": "An error occurred during login"
   },
   "validation": {
     "emailRequired": "Please enter your email address",

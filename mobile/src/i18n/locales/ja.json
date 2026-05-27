@@ -65,7 +65,9 @@
     "accountCreated": "アカウントが作成されました。ログインしてください。",
     "accountCreatedSelectPlan": "アカウントが作成されました。プランを選択してください。",
     "registerFailed": "登録に失敗しました",
-    "registerError": "登録中にエラーが発生しました"
+    "registerError": "登録中にエラーが発生しました",
+    "loginFailed": "ログインに失敗しました",
+    "loginError": "ログイン中にエラーが発生しました"
   },
   "validation": {
     "emailRequired": "メールアドレスを入力してください",

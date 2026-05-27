@@ -80,7 +80,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
         onLoginSuccess(result.isDummyLogin);
       }
     } else {
-      Alert.alert(t('auth.registerFailed'), result.error || t('common.error'));
+      Alert.alert(t('auth.loginFailed'), result.error || t('common.error'));
     }
   };
 
