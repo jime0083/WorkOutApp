@@ -1,5 +1,70 @@
 # Health Manager アプリ 問題管理
 
+## Problem #23: TestFlightアップロード失敗（iPadアイコン不足）
+発生日: 2026-05-27
+解決日: 2026-05-27
+関連Phase: Phase 20
+ステータス: 解決済み
+
+### 必須チェックリスト（全て完了必須）
+- [x] 1. problem.txt の過去事例を確認した
+- [x] 2. TodoWrite に問題対応タスクを追加した
+- [x] 3. 原因を徹底調査した
+- [x] 4. 修正計画を作成した
+- [x] 5. problem.txt に記録した（この項目）
+- [x] 6. 修正を実施した
+- [ ] 7. 動作確認を完了した（再アップロード待ち）
+- [ ] 8. TodoWrite のタスクを完了にした
+
+### 問題の詳細
+- Xcode から App Store Connect へのアップロード時にバリデーションエラー
+- エラー内容:
+  - Missing required icon file: 167x167 pixels (iPad Pro)
+  - Missing required icon file: 152x152 pixels (iPad)
+
+### 原因分析
+- `Contents.json` に iPhone アイコンのみ定義されていた
+- iPad アイコン（`idiom: "ipad"`）が欠落していた
+- App Store Connect へのアップロードには全デバイス向けアイコンが必須
+
+### 修正内容
+1. 1024x1024ソース画像から `sips` コマンドでiPadアイコンを生成:
+   - AppIcon-83.5@2x.png (167x167) - iPad Pro
+   - AppIcon-76@2x.png (152x152) - iPad
+   - AppIcon-76.png (76x76) - iPad @1x
+   - AppIcon-40@2x-ipad.png (80x80) - iPad Spotlight
+   - AppIcon-40-ipad.png (40x40) - iPad Spotlight @1x
+   - AppIcon-29@2x-ipad.png (58x58) - iPad Settings
+   - AppIcon-29-ipad.png (29x29) - iPad Settings @1x
+   - AppIcon-20@2x-ipad.png (40x40) - iPad Notification
+   - AppIcon-20-ipad.png (20x20) - iPad Notification @1x
+
+2. `Contents.json` を更新してiPadアイコンを登録
+
+### 修正ファイル
+- mobile/ios/WorkOutAppMobile/Images.xcassets/AppIcon.appiconset/Contents.json
+- mobile/ios/WorkOutAppMobile/Images.xcassets/AppIcon.appiconset/AppIcon-*.png（9ファイル新規作成）
+
+### 追加エラー（2026-05-27 13:41）
+iPadアイコン追加後、再アップロード時に新たなエラーが発生:
+
+1. **SDK version issue（致命的）**
+   - 現在: iOS 18.5 SDK（Xcode 16.4）
+   - 必要: iOS 26 SDK（Xcode 26以降）
+   - **解決策: Xcodeを最新版にアップデート**
+
+2. **Upload Symbols Failed（警告）**
+   - React.framework のdSYMが不足
+   - ReactNativeDependencies.framework のdSYMが不足
+   - （Xcodeアップデート後に再評価）
+
+### 学んだこと
+- App Store Connect へのアップロードには iPhone + iPad 両方のアイコンが必須
+- アイコン設定は Contents.json で管理される
+- App Store Connect は最新SDKでのビルドを要求する
+
+---
+
 ## Problem #21: Sandbox IAPパーミッションエラー（App Store Connect設定問題）
 発生日: 2026-05-26
 関連Phase: Phase 20

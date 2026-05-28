@@ -26,8 +26,8 @@
 		761780EC2CA45674006654EE /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = WorkOutAppMobile/AppDelegate.swift; sourceTree = "<group>"; };
 		7E145BB11111E071315965AC /* Pods-WorkOutAppMobile.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-WorkOutAppMobile.release.xcconfig"; path = "Target Support Files/Pods-WorkOutAppMobile/Pods-WorkOutAppMobile.release.xcconfig"; sourceTree = "<group>"; };
 		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = WorkOutAppMobile/LaunchScreen.storyboard; sourceTree = "<group>"; };
-		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		E1B2C3D42FC58AB100E4F5A6 /* WorkOutAppMobile.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; name = WorkOutAppMobile.entitlements; path = WorkOutAppMobile/WorkOutAppMobile.entitlements; sourceTree = "<group>"; };
+		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */

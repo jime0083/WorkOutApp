@@ -47,7 +47,8 @@
       "Bash(claude session save workout)",
       "Bash(killall:*)",
       "WebFetch(domain:sarunw.com)",
-      "WebFetch(domain:community.revenuecat.com)"
+      "WebFetch(domain:community.revenuecat.com)",
+      "Bash(sw_vers)"
     ]
   }
 }
