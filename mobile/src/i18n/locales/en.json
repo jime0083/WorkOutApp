@@ -17,11 +17,15 @@
     "next": "Next",
     "done": "Done",
     "edit": "Edit",
-    "settings": "Settings"
+    "settings": "Settings",
+    "logout": "Logout"
   },
   "menu": {
     "update": "Updates",
-    "changePlan": "Change Plan"
+    "changePlan": "Change Plan",
+    "currentPlan": "Current Plan",
+    "freePlanLabel": "Free Plan",
+    "premiumPlanLabel": "Premium Plan"
   },
   "nav": {
     "talk": "Chat",
@@ -183,6 +187,8 @@
     "purchaseSuccessMessage": "Welcome to Premium! Enjoy all features.",
     "purchaseErrorTitle": "Purchase Error",
     "purchaseErrorMessage": "An error occurred during purchase. Please try again.",
+    "restoredTitle": "Purchase Restored",
+    "restoredMessage": "Your previous purchase was found. Premium plan has been activated.",
     "currentPlan": "Current Plan",
     "freePlan": "Free Plan",
     "premiumPlan": "Premium Plan",

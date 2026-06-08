@@ -158,3 +158,107 @@
 
 #### 実施済みの対策（効果なし）
 - [x] 新しいSandboxテスターを作成して試す → 効果なし
+
+---
+
+### Work 8: Google Cloud IAM権限付与（Firebase Functionsデプロイ用）
+ステータス: 完了
+完了日: 2026-05-30
+優先度: 最高
+関連: Problem #24, Phase 20
+登録日: 2026-05-29
+
+#### 背景
+Firebase Cloud Functionsをデプロイしようとしたところ、IAM権限エラーが発生。
+エラー: `Permission 'iam.serviceAccounts.ActAs' denied`
+
+#### 作業手順
+
+1. **Google Cloud Console IAMにアクセス**
+   - URL: https://console.cloud.google.com/iam-admin/iam?project=workoutapp-72355
+
+2. **自分のアカウントを探して「編集」（鉛筆アイコン）をクリック**
+
+3. **以下のロールを追加**
+   - Cloud Functions Admin (`roles/cloudfunctions.admin`)
+   - Service Account User (`roles/iam.serviceAccountUser`)
+   - Artifact Registry Administrator (`roles/artifactregistry.admin`)
+   - Cloud Run Admin (`roles/run.admin`)
+
+4. **「保存」をクリック**
+
+5. **完了したらClaudeに報告**
+   - 再度 `firebase deploy --only functions` を実行
+
+#### 完了確認
+- [x] IAM権限を付与した
+- [x] Claudeに報告した
+- [x] Firebase Functionsデプロイ成功（2026-05-30）
+
+---
+
+### Work 9: APPLE_SHARED_SECRET設定（IAP レシート検証用）
+ステータス: 完了
+完了日: 2026-05-30
+優先度: 高
+関連: Problem #24, Phase 20
+登録日: 2026-05-29
+前提: Work 8 完了後
+
+#### 背景
+IAP購入後のレシート検証にはApp Store ConnectのShared Secretが必要。
+Firebase Cloud FunctionがAppleのサーバーと通信するために使用する。
+
+#### 作業手順
+
+1. **App Store ConnectでShared Secretを取得**
+   - App Store Connect にログイン
+   - 「App」→「ワークアウトアプリ」を選択
+   - 「App情報」→「App用共有シークレット」セクション
+   - 「管理」をクリック → Shared Secretをコピー
+
+2. **Firebase Functionsの環境変数に設定**
+   ```bash
+   cd /Users/jime0083/WorkOutApp
+   firebase functions:secrets:set APPLE_SHARED_SECRET
+   # プロンプトでShared Secretを入力
+   ```
+
+3. **または、Firebase Consoleから設定**
+   - Firebase Console → Functions → 環境変数
+   - `APPLE_SHARED_SECRET` を追加
+
+#### 完了確認
+- [x] Shared Secretを取得した
+- [x] Firebase環境変数に設定した
+- [x] verifyAppleReceipt関数を再デプロイした
+
+---
+
+### Work 10: TestFlight再テスト（IAP動作確認）
+ステータス: 完了
+完了日: 2026-05-30
+優先度: 高
+関連: Problem #24, Problem #25, Phase 20
+登録日: 2026-05-29
+前提: Work 8, Work 9 完了後
+更新日: 2026-05-30
+
+#### 背景
+- Work 8, Work 9 完了後のテストで「duplicate-purchase」エラーが発生
+- Problem #25 として修正実施済み
+- **新しいビルドをTestFlightにアップロードする必要がある**
+
+#### 修正内容（Problem #25）
+- 未完了の購入トランザクションを自動処理する機能を追加
+- duplicate-purchaseエラー発生時に自動復元を試行
+
+#### テスト結果
+- オンボーディング: 正常に表示された
+- IAP購入: 既存のサブスクリプションが認識された（「現在このサブスクリプションに登録しています」）
+- **追加修正**: 既存サブスクユーザーはサブスク画面をスキップするように修正
+
+#### 完了確認
+- [x] 新しいビルドをTestFlightにアップロードした
+- [x] IAP購入/復元が成功した
+- [x] 既存サブスクユーザーのサブスク画面スキップ機能を追加

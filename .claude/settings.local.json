@@ -48,7 +48,13 @@
       "Bash(killall:*)",
       "WebFetch(domain:sarunw.com)",
       "WebFetch(domain:community.revenuecat.com)",
-      "Bash(sw_vers)"
+      "Bash(sw_vers)",
+      "Bash(firebase functions:list:*)",
+      "Bash(gcloud projects add-iam-policy-binding:*)",
+      "Bash(firebase functions:delete:*)",
+      "Bash(firebase functions:secrets:set:*)",
+      "Bash(firebase functions:log:*)",
+      "Bash(firebase functions:secrets:access:*)"
     ]
   }
 }

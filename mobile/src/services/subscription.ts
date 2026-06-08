@@ -178,22 +178,29 @@ export async function verifyReceipt(
   lang?: string
 ): Promise<PurchaseResult> {
   try {
+    console.log('[IAP] verifyReceipt called, receipt length:', receiptData?.length);
     const functions = getFunctionsInstance();
+    console.log('[IAP] Firebase Functions instance obtained');
+
     const verifyAppleReceipt = httpsCallable<
       { receiptData: string; lang?: string },
       PurchaseResult
     >(functions, 'verifyAppleReceipt');
+
+    console.log('[IAP] Calling verifyAppleReceipt Firebase Function...');
     const result = await verifyAppleReceipt({
       receiptData,
       lang,
     });
+    console.log('[IAP] Firebase Function returned:', JSON.stringify(result.data, null, 2));
 
     return result.data;
-  } catch (error) {
-    console.error('Failed to verify receipt:', error);
+  } catch (error: any) {
+    console.error('[IAP] Failed to verify receipt:', error);
+    console.error('[IAP] Verify error details:', JSON.stringify(error, null, 2));
     return {
       success: false,
-      error: 'Receipt verification failed',
+      error: `Receipt verification failed: ${error?.message || error?.code || String(error)}`,
     };
   }
 }
@@ -221,29 +228,58 @@ export async function processPurchase(
   lang?: string
 ): Promise<PurchaseResult> {
   try {
-    // iOSレシートデータを取得
-    const receiptData = await getReceiptIOS();
+    console.log('[IAP] processPurchase called with purchase:', JSON.stringify(purchase, null, 2));
+
+    // App Store レシートを取得（リトライ付き）
+    // Note: StoreKit 2 でも verifyReceipt API は App Store レシートを必要とする
+    let receiptData: string | null = null;
+    const maxRetries = 3;
+    const retryDelay = 1000; // 1秒
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`[IAP] Getting iOS receipt (attempt ${attempt}/${maxRetries})...`);
+        receiptData = await getReceiptIOS();
+        if (receiptData) {
+          console.log('[IAP] Receipt data obtained, length:', receiptData.length);
+          break;
+        }
+      } catch (receiptError: any) {
+        console.warn(`[IAP] getReceiptIOS() attempt ${attempt} failed:`, receiptError?.message || receiptError);
+        if (attempt < maxRetries) {
+          console.log(`[IAP] Waiting ${retryDelay}ms before retry...`);
+          await new Promise<void>(resolve => setTimeout(resolve, retryDelay));
+        }
+      }
+    }
+
     if (!receiptData) {
+      console.error('[IAP] Failed to get receipt data after all retries');
       return {
         success: false,
-        error: 'No receipt data',
+        error: 'Failed to get receipt data. Please try again.',
       };
     }
 
     // レシートを検証
+    console.log('[IAP] Calling verifyReceipt with Firebase Function...');
     const result = await verifyReceipt(receiptData, lang);
+    console.log('[IAP] verifyReceipt result:', JSON.stringify(result, null, 2));
 
     // 検証成功時はトランザクションを完了
     if (result.success) {
+      console.log('[IAP] Completing purchase transaction...');
       await completePurchase(purchase);
+      console.log('[IAP] Purchase transaction completed');
     }
 
     return result;
-  } catch (error) {
-    console.error('Failed to process purchase:', error);
+  } catch (error: any) {
+    console.error('[IAP] Failed to process purchase:', error);
+    console.error('[IAP] Error details:', JSON.stringify(error, null, 2));
     return {
       success: false,
-      error: 'Purchase processing failed',
+      error: `Purchase processing failed: ${error?.message || String(error)}`,
     };
   }
 }
@@ -254,6 +290,7 @@ export async function processPurchase(
 export async function restorePurchases(lang?: string): Promise<PurchaseResult> {
   try {
     const purchases = await getAvailablePurchases();
+    console.log('[IAP] Available purchases:', purchases.length);
 
     if (purchases.length === 0) {
       return {
@@ -262,9 +299,42 @@ export async function restorePurchases(lang?: string): Promise<PurchaseResult> {
       };
     }
 
-    // iOSレシートを取得して検証
-    const receiptData = await getReceiptIOS();
+    // 未完了のトランザクションを完了する
+    for (const purchase of purchases) {
+      console.log('[IAP] Finishing pending transaction:', purchase.productId);
+      try {
+        await finishTransaction({
+          purchase,
+          isConsumable: false,
+        });
+      } catch (finishError) {
+        console.warn('[IAP] Failed to finish transaction:', finishError);
+      }
+    }
+
+    // App Store レシートを取得（リトライ付き）
+    let receiptData: string | null = null;
+    const maxRetries = 3;
+    const retryDelay = 1000;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`[IAP] Getting iOS receipt for restore (attempt ${attempt}/${maxRetries})...`);
+        receiptData = await getReceiptIOS();
+        if (receiptData) {
+          console.log('[IAP] Receipt data obtained for restore');
+          break;
+        }
+      } catch (receiptError: any) {
+        console.warn(`[IAP] getReceiptIOS() attempt ${attempt} failed:`, receiptError?.message);
+        if (attempt < maxRetries) {
+          await new Promise<void>(resolve => setTimeout(resolve, retryDelay));
+        }
+      }
+    }
+
     if (!receiptData) {
+      console.log('[IAP] No receipt data available for restore');
       return {
         success: true,
         subscriptionStatus: 'free',
@@ -279,6 +349,72 @@ export async function restorePurchases(lang?: string): Promise<PurchaseResult> {
       success: false,
       error: 'Restore failed',
     };
+  }
+}
+
+/**
+ * 未完了の購入を確認して処理する
+ * アプリ起動時に呼び出すことで、duplicate-purchaseエラーを防ぐ
+ */
+export async function checkAndProcessPendingPurchases(
+  lang?: string
+): Promise<PurchaseResult | null> {
+  try {
+    console.log('[IAP] Checking for pending purchases...');
+    const purchases = await getAvailablePurchases();
+    console.log('[IAP] Found pending purchases:', purchases.length);
+
+    if (purchases.length === 0) {
+      return null; // 未完了の購入なし
+    }
+
+    // 未完了のトランザクションを処理
+    for (const purchase of purchases) {
+      console.log('[IAP] Processing pending purchase:', purchase.productId);
+      try {
+        await finishTransaction({
+          purchase,
+          isConsumable: false,
+        });
+        console.log('[IAP] Finished pending transaction:', purchase.productId);
+      } catch (finishError) {
+        console.warn('[IAP] Failed to finish pending transaction:', finishError);
+      }
+    }
+
+    // App Store レシートを取得（リトライ付き）
+    let receiptData: string | null = null;
+    const maxRetries = 3;
+    const retryDelay = 1000;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`[IAP] Getting iOS receipt for pending (attempt ${attempt}/${maxRetries})...`);
+        receiptData = await getReceiptIOS();
+        if (receiptData) {
+          console.log('[IAP] Receipt data obtained for pending purchases');
+          break;
+        }
+      } catch (receiptError: any) {
+        console.warn(`[IAP] getReceiptIOS() attempt ${attempt} failed:`, receiptError?.message);
+        if (attempt < maxRetries) {
+          await new Promise<void>(resolve => setTimeout(resolve, retryDelay));
+        }
+      }
+    }
+
+    // レシートを検証してサブスクリプション状態を更新
+    if (receiptData) {
+      return await verifyReceipt(receiptData, lang);
+    }
+
+    return {
+      success: true,
+      subscriptionStatus: 'free',
+    };
+  } catch (error) {
+    console.error('[IAP] Failed to check pending purchases:', error);
+    return null;
   }
 }
 

@@ -17,6 +17,10 @@ module.exports = {
   ignorePatterns: [
     '/lib/**/*',
     '/node_modules/**/*',
+    '.eslintrc.js',
+    'jest.config.js',
+    'jest.setup.js',
+    '**/__tests__/**/*',
   ],
   plugins: ['@typescript-eslint'],
   rules: {

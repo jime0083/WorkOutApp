@@ -1,5 +1,304 @@
 # Health Manager アプリ 問題管理
 
+## Problem #27: IAP購入エラー（getReceiptIOS失敗）
+発生日: 2026-06-01
+関連Phase: Phase 20
+ステータス: 修正中
+
+### 必須チェックリスト（全て完了必須）
+- [x] 1. problem.txt の過去事例を確認した
+- [x] 2. TodoWrite に問題対応タスクを追加した
+- [x] 3. 原因を徹底調査した
+- [x] 4. 修正計画を作成した
+- [x] 5. problem.txt に記録した（この項目）
+- [ ] 6. 修正を実施した
+- [ ] 7. 動作確認を完了した
+- [ ] 8. TodoWrite のタスクを完了にした
+
+### 問題の詳細
+- TestFlightでサブスク購入テストを実行
+- 購入リクエストは成功（purchaseUpdatedListener が呼ばれる）
+- processPurchase 内で失敗
+
+### 原因分析（デバッグアラートより）
+
+#### 実証されたフロー
+```
+1. DEBUG: Purchase Start ✅ 成功
+2. DEBUG: Request Sent ✅ 成功
+3. purchaseUpdatedListener ✅ 呼ばれた
+4. processPurchase ❌ 失敗
+```
+
+#### エラー詳細
+```
+Error Domain=com.margelo.nitro.rniap
+Code=-1
+code: "service-error"
+message: "Unable to Complete Request"
+Debug: processPurchase failed
+```
+
+#### 根本原因（実証済み）
+**`getReceiptIOS()` が失敗している**
+
+react-native-iap v15+ (StoreKit 2) では:
+- `getReceiptIOS()` の挙動が変わった
+- 購入直後のレシート取得が失敗することがある
+- 代わりに `purchase.transactionReceipt` を使用すべき
+
+### 修正計画
+
+#### Step 1: processPurchase を修正
+`getReceiptIOS()` の代わりに `purchase.purchaseToken` を使用
+
+```typescript
+// Before
+const receiptData = await getReceiptIOS();
+
+// After
+let receiptData = purchase.purchaseToken;
+if (!receiptData) {
+  // フォールバック
+  receiptData = await getReceiptIOS();
+}
+```
+
+### 実施した修正内容
+
+**修正方針の変更:**
+当初は `purchase.purchaseToken` を使用する予定だったが、これはStoreKit 2のJWS形式であり、
+サーバー側の `verifyReceipt` APIと互換性がない。
+
+**最終的な修正:**
+`getReceiptIOS()` をリトライロジック付きで使用:
+- 最大3回リトライ
+- リトライ間隔: 1秒
+- StoreKit 2でもApp Storeレシートは生成されるが、タイミングの問題で取得に失敗することがある
+
+```typescript
+for (let attempt = 1; attempt <= maxRetries; attempt++) {
+  try {
+    receiptData = await getReceiptIOS();
+    if (receiptData) break;
+  } catch (error) {
+    if (attempt < maxRetries) {
+      await new Promise<void>(resolve => setTimeout(resolve, 1000));
+    }
+  }
+}
+```
+
+修正対象関数:
+1. `processPurchase`: リトライロジック追加
+2. `restorePurchases`: 同様
+3. `checkAndProcessPendingPurchases`: 同様
+
+### 修正ファイル
+- mobile/src/services/subscription.ts
+
+---
+
+## Problem #26: processPurchase failed（Firebase Functions シークレット未設定）
+発生日: 2026-06-01
+関連Phase: Phase 20
+ステータス: 修正完了・テスト待ち
+
+### 必須チェックリスト（全て完了必須）
+- [x] 1. problem.txt の過去事例を確認した
+- [x] 2. TodoWrite に問題対応タスクを追加した
+- [x] 3. 原因を徹底調査した
+- [x] 4. 修正計画を作成した
+- [x] 5. problem.txt に記録した（この項目）
+- [x] 6. 修正を実施した
+- [ ] 7. 動作確認を完了した（ユーザーテスト待ち）
+- [ ] 8. TodoWrite のタスクを完了にした
+
+### 問題の詳細
+- TestFlightでサブスク購入テストを実行
+- 月額/年額プラン選択後「processPurchase failed」エラーが発生
+- サブスクリプション購入が完了しない
+
+### 原因分析
+
+#### 調査手順
+1. Firebase Functions のデプロイ状態を確認 → verifyAppleReceipt はデプロイ済み
+2. Firebase Functions ログを確認 → 関数が呼ばれた形跡がない
+3. クライアントコードを確認 → 正しいリージョン（asia-northeast1）を使用
+4. verifyAppleReceipt.ts のコードを精査 → **シークレット宣言が欠落**
+
+#### 根本原因
+Firebase Functions v2 では、シークレット（環境変数）を関数内で使用する場合、
+**関数オプションで明示的に `secrets` 配列で宣言する必要がある**。
+
+```typescript
+// 修正前（問題あり）
+export const verifyAppleReceipt = onCall<VerifyReceiptData>(
+  {
+    region: 'asia-northeast1',
+    // secrets の宣言がない → process.env.APPLE_SHARED_SECRET が undefined
+  },
+
+// 修正後
+export const verifyAppleReceipt = onCall<VerifyReceiptData>(
+  {
+    region: 'asia-northeast1',
+    secrets: ['APPLE_SHARED_SECRET'],  // ← 追加
+  },
+```
+
+シークレットが宣言されていなかったため、`process.env.APPLE_SHARED_SECRET` が
+undefined となり、Apple のレシート検証が失敗していた。
+
+### 修正計画
+1. verifyAppleReceipt.ts に `secrets: ['APPLE_SHARED_SECRET']` を追加
+2. Firebase Functions を再デプロイ
+
+### 修正ファイル
+- functions/src/subscription/verifyAppleReceipt.ts
+
+### 実施した修正内容
+1. verifyAppleReceipt.ts の onCall オプションに `secrets: ['APPLE_SHARED_SECRET']` を追加
+2. `firebase deploy --only functions:verifyAppleReceipt` でデプロイ完了
+
+### 動作確認結果
+- [ ] TypeScript型チェック: （確認待ち）
+- [ ] TestFlightでサブスク購入成功: （ユーザーテスト待ち）
+
+### 学んだこと
+- Firebase Functions v2 ではシークレットは関数オプションで明示的に宣言が必要
+- `process.env` で参照するだけでは不十分
+- デプロイ時に自動的にシークレットが利用可能にならない
+
+### 再発防止策
+- Firebase Functions でシークレットを使用する際は必ず `secrets` 配列に追加
+- デプロイ後、ログで関数が正しく呼び出されているか確認
+
+---
+
+## Problem #25: IAP duplicate-purchase エラー
+発生日: 2026-05-30
+解決日: 2026-05-30
+関連Phase: Phase 20
+ステータス: 解決済み
+
+### 必須チェックリスト（全て完了必須）
+- [x] 1. problem.txt の過去事例を確認した
+- [x] 2. TodoWrite に問題対応タスクを追加した
+- [x] 3. 原因を徹底調査した
+- [x] 4. 修正計画を作成した
+- [x] 5. problem.txt に記録した（この項目）
+- [x] 6. 修正を実施した
+- [x] 7. 動作確認を完了した
+- [x] 8. TodoWrite のタスクを完了にした
+
+### 問題の詳細
+- TestFlightでIAP購入テスト時にエラー発生
+- エラー: `code: "duplicate-purchase"`
+- メッセージ: "Duplicate purchase update skipped for com.okiroya.workoutapp.subscription.monthly"
+
+### 原因分析
+- Sandbox環境で以前に購入したサブスクリプションのトランザクションが未完了
+- Cloud Functionsがデプロイされていない時に購入を試行したため、`finishTransaction`が呼ばれなかった
+- 未完了のトランザクションが残っているため、新規購入が「重複」と判定される
+
+### 修正計画
+1. `checkAndProcessPendingPurchases`関数を追加
+   - アプリ起動時に未完了の購入をチェック
+   - 未完了のトランザクションを完了させる
+2. SubscriptionScreen起動時に未完了の購入を処理
+3. `duplicate-purchase`エラー発生時に`restorePurchases`を呼び出して復元を試行
+
+### 修正ファイル
+- mobile/src/services/subscription.ts
+- mobile/src/screens/subscription/SubscriptionScreen.tsx
+- mobile/src/stores/subscriptionStore.ts
+- mobile/src/i18n/locales/ja.json
+- mobile/src/i18n/locales/en.json
+
+### 実施した修正内容
+1. `subscription.ts`に`checkAndProcessPendingPurchases`関数を追加
+2. `restorePurchases`関数を更新して未完了トランザクションを完了させる
+3. SubscriptionScreenで画面読み込み時に未完了の購入をチェック
+4. `duplicate-purchase`エラー発生時に自動で購入復元を試行
+5. 復元成功時の翻訳キーを追加（restoredTitle, restoredMessage）
+6. `subscriptionStore.ts`を修正してFirestoreからサブスク状態をチェック
+   - 既にアクティブなサブスクリプションがある場合、サブスク画面をスキップ
+
+### 動作確認結果
+- [x] TypeScript型チェック: PASSED
+- [x] TestFlightで既存サブスクが認識された（「現在このサブスクリプションに登録しています」と表示）
+
+### 学んだこと
+- Sandbox環境では購入トランザクションが残ることがある
+- アプリ起動時に未完了の購入をチェック・処理することが重要
+- ユーザーのサブスク状態はFirestoreからもチェックする必要がある
+
+---
+
+## Problem #24: TestFlight実機テストで2つの問題発生
+発生日: 2026-05-29
+解決日: 2026-05-30
+関連Phase: Phase 20
+ステータス: 解決済み
+
+### 必須チェックリスト（全て完了必須）
+- [x] 1. problem.txt の過去事例を確認した
+- [x] 2. TodoWrite に問題対応タスクを追加した
+- [x] 3. 原因を徹底調査した
+- [x] 4. 修正計画を作成した
+- [x] 5. problem.txt に記録した（この項目）
+- [x] 6. 修正を実施した
+- [x] 7. 動作確認を完了した
+- [x] 8. TodoWrite のタスクを完了にした
+
+### 問題の詳細
+
+#### 問題1: オンボーディング画面が表示されない
+- アプリ起動直後にサブスクリプション画面が表示される
+- オンボーディングフローがスキップされる
+
+#### 問題2: IAP購入エラー（processPurchase failed）
+- エラーメッセージ: "Purchase processing failed"
+- デバッグ: "processPurchase failed"
+- purchaseSubscription()は成功するが、processPurchase()で失敗
+
+### 原因分析
+
+#### 問題1の原因
+- **AsyncStorageにXcode開発時のデータが残っていた**
+- `@onboarding_complete` = 'true' が保存されている
+- TestFlightと開発版は同じBundle IDのためデータが引き継がれた
+
+#### 問題2の原因（実証済み）
+- **Firebase Cloud Functionsがデプロイされていない**
+- コマンド `firebase functions:list` で確認 → "No functions found"
+- `verifyAppleReceipt` 関数が存在しないためレシート検証が失敗
+
+### 修正計画
+
+#### Step 1: Firebase Cloud Functionsをデプロイ
+```bash
+cd /Users/jime0083/WorkOutApp
+firebase deploy --only functions
+```
+
+#### Step 2: APPLE_SHARED_SECRETを環境変数に設定
+```bash
+firebase functions:secrets:set APPLE_SHARED_SECRET
+```
+※ App Store Connectから取得したShared Secretを設定
+
+#### Step 3: TestFlight再テスト
+1. アプリを削除して再インストール（AsyncStorageクリア）
+2. オンボーディングから開始されることを確認
+3. サブスク購入が成功することを確認
+
+### 修正ファイル
+- なし（デプロイ作業のみ）
+
+---
+
 ## Problem #23: TestFlightアップロード失敗（iPadアイコン不足）
 発生日: 2026-05-27
 解決日: 2026-05-27

@@ -259,33 +259,41 @@
 
 ---
 
-## Phase 20: IAP課金テストの修正（Problem #19）
-関連: problem.txt Problem #19
+## Phase 20: IAP課金機能の修正（Problem #19, #21, #24）
+関連: problem.txt Problem #19, #21, #24
 前提: Phase 19 完了後
-**優先度: 高**
+**優先度: 最高（現在対応中）**
 
 ### 問題概要
-シミュレーターでSandboxアカウントを使用してIAP課金テストを行うと、
-「user-cancelled, Request Cancelled」エラーが発生し購入処理が完了しない。
+TestFlight実機テストで以下の問題が発生:
+1. オンボーディング画面が表示されない（直接課金画面が表示）
+2. IAP購入エラー: "processPurchase failed"
 
-### 20.1 StoreKit Configuration ファイル作成（方法A）
-- [ ] 20.1.1 Xcodeで Products.storekit ファイル作成
-- [ ] 20.1.2 月額商品 (com.okiroya.workoutapp.subscription.monthly) 追加
-- [ ] 20.1.3 年額商品 (com.okiroya.workoutapp.subscription.yearly) 追加
-- [ ] 20.1.4 Xcodeスキーム設定でStoreKit Configuration有効化
-- [ ] 20.1.5 シミュレーターでローカルテスト実行
+### 原因（実証済み）
+1. **オンボーディング非表示**: Xcode開発時のAsyncStorageデータが残っている
+2. **processPurchase failed**: Firebase Cloud Functionsがデプロイされていない
 
-### 20.2 実機テスト（方法B - 代替手段）
-- [ ] 20.2.1 実機をMacに接続
-- [ ] 20.2.2 デバイスの設定 > App Store > Sandboxアカウントでサインイン
-- [ ] 20.2.3 Xcodeから実機にアプリをインストール
-- [ ] 20.2.4 Sandboxアカウントで課金テスト実行
+### 20.1 Firebase Cloud Functionsデプロイ準備（AI作業）
+- [x] 20.1.1 ESLint設定修正 [完了: 2026-05-29]
+- [x] 20.1.2 Node.jsランタイムを20にアップグレード [完了: 2026-05-29]
+- [x] 20.1.3 npm パッケージバージョン修正 [完了: 2026-05-29]
 
-### 20.3 動作確認
-- [ ] 20.3.1 月額プラン購入テスト
-- [ ] 20.3.2 年額プラン購入テスト
-- [ ] 20.3.3 購入後のプレミアム状態確認
-- [ ] 20.3.4 problem.txt 更新（Problem #19 を解決済みに変更）
+### 20.2 Google Cloud IAM権限付与（手動作業 - Work 8参照）
+- [ ] 20.2.1 Google Cloud ConsoleでIAM権限を付与
+
+### 20.3 Firebase Cloud Functionsデプロイ（AI作業）
+- [ ] 20.3.1 firebase deploy --only functions 実行
+- [ ] 20.3.2 デプロイ成功を確認
+
+### 20.4 APPLE_SHARED_SECRET設定（手動作業 - Work 9参照）
+- [ ] 20.4.1 App Store ConnectからShared Secretを取得
+- [ ] 20.4.2 Firebase Functionsの環境変数に設定
+
+### 20.5 TestFlight再テスト
+- [ ] 20.5.1 TestFlightアプリを削除して再インストール（AsyncStorageクリア）
+- [ ] 20.5.2 オンボーディング画面が表示されることを確認
+- [ ] 20.5.3 IAP購入が成功することを確認
+- [ ] 20.5.4 problem.txt 更新（Problem #24 を解決済みに変更）
 
 ---
 

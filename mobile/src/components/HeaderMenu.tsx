@@ -18,6 +18,7 @@ import { colors, typography, spacing } from '../theme';
 import type { MainStackParamList } from '../navigation/types';
 import { subscribeToUnreadCountWithBadge } from '../services/unreadCount';
 import { useAuthStore } from '../stores/authStore';
+import { useSubscriptionStore } from '../stores/subscriptionStore';
 
 type NavigationProp = NativeStackNavigationProp<MainStackParamList>;
 
@@ -28,6 +29,7 @@ export const HeaderMenu: React.FC = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const userDocument = useAuthStore((state) => state.userDocument);
   const logout = useAuthStore((state) => state.logout);
+  const isPremium = useSubscriptionStore((state) => state.isPremium);
 
   // 未読件数をリアルタイムで監視（アプリアイコンバッジも自動更新）
   useEffect(() => {
@@ -87,6 +89,14 @@ export const HeaderMenu: React.FC = () => {
       >
         <Pressable style={styles.overlay} onPress={closeMenu}>
           <View style={styles.menuContainer}>
+            {/* 現在のプラン */}
+            <View style={styles.planItem}>
+              <Text style={styles.planLabel}>{t('menu.currentPlan')}</Text>
+              <Text style={[styles.planValue, isPremium && styles.planValuePremium]}>
+                {isPremium ? t('menu.premiumPlanLabel') : t('menu.freePlanLabel')}
+              </Text>
+            </View>
+
             {/* アップデート（未読件数表示のみ、遷移なし） */}
             <TouchableOpacity
               style={styles.menuItem}
@@ -152,10 +162,10 @@ const styles = StyleSheet.create({
   },
   menuContainer: {
     backgroundColor: colors.surface,
-    borderRadius: 12,
+    borderRadius: 8,
     marginTop: 80,
     marginRight: spacing.md,
-    minWidth: 240,
+    minWidth: 160, // 240 * 2/3 = 160
     shadowColor: colors.black,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
@@ -163,10 +173,29 @@ const styles = StyleSheet.create({
     elevation: 5,
     overflow: 'hidden',
   },
+  planItem: {
+    padding: spacing.md,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
+    backgroundColor: colors.gray[50],
+  },
+  planLabel: {
+    fontSize: typography.sizes.xs,
+    color: colors.text.secondary,
+    marginBottom: spacing.xs,
+  },
+  planValue: {
+    fontSize: typography.sizes.sm,
+    color: colors.text.primary,
+    fontWeight: typography.weights.semibold as '600',
+  },
+  planValuePremium: {
+    color: colors.primary,
+  },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: spacing.lg + spacing.xs, // 1.5倍: 12 * 1.5 = 18 ≈ 16 + 4 = 20
+    padding: spacing.md, // 2/3に縮小
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
   },
@@ -175,7 +204,7 @@ const styles = StyleSheet.create({
   },
   menuItemText: {
     flex: 1,
-    fontSize: Math.round(typography.sizes.md * 1.5), // 1.5倍: 15 * 1.5 = 22.5 ≈ 23
+    fontSize: typography.sizes.md, // 通常サイズに戻す
     color: colors.text.primary,
     fontWeight: typography.weights.medium as '500',
   },
@@ -184,16 +213,16 @@ const styles = StyleSheet.create({
   },
   badge: {
     backgroundColor: colors.error,
-    borderRadius: 12,
-    minWidth: 28,
-    height: 28,
-    paddingHorizontal: 8,
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    paddingHorizontal: 6,
     justifyContent: 'center',
     alignItems: 'center',
   },
   badgeText: {
     color: colors.white,
-    fontSize: 14,
+    fontSize: 11,
     fontWeight: '600',
   },
 });

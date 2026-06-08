@@ -1,0 +1,1 @@
+{"version":3,"file":"respondToFriendRequest.d.ts","sourceRoot":"","sources":["../../src/friends/respondToFriendRequest.ts"],"names":[],"mappings":"AAWA,UAAU,0BAA0B;IAClC,YAAY,EAAE,MAAM,CAAC;IACrB,MAAM,EAAE,QAAQ,GAAG,QAAQ,CAAC;IAC5B,IAAI,CAAC,EAAE,MAAM,CAAC;CACf;AAOD,eAAO,MAAM,sBAAsB,yFAyElC,CAAC"}

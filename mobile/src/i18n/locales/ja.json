@@ -17,11 +17,15 @@
     "next": "次へ",
     "done": "完了",
     "edit": "編集",
-    "settings": "設定"
+    "settings": "設定",
+    "logout": "ログアウト"
   },
   "menu": {
     "update": "アップデート",
-    "changePlan": "プラン変更"
+    "changePlan": "プラン変更",
+    "currentPlan": "現在のプラン",
+    "freePlanLabel": "フリープラン",
+    "premiumPlanLabel": "プレミアムプラン"
   },
   "nav": {
     "talk": "トーク",
@@ -183,6 +187,8 @@
     "purchaseSuccessMessage": "プレミアムプランへようこそ！すべての機能をお楽しみください。",
     "purchaseErrorTitle": "購入エラー",
     "purchaseErrorMessage": "購入処理中にエラーが発生しました。もう一度お試しください。",
+    "restoredTitle": "購入を復元しました",
+    "restoredMessage": "以前の購入が見つかりました。プレミアムプランが有効になりました。",
     "currentPlan": "現在のプラン",
     "freePlan": "フリープラン",
     "premiumPlan": "プレミアムプラン",

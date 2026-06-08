@@ -25,6 +25,8 @@ import {
   purchaseSubscription,
   setupPurchaseListeners,
   processPurchase,
+  checkAndProcessPendingPurchases,
+  restorePurchases,
 } from '../../services/subscription';
 import { openSubscriptionManagement } from '../../services/unreadCount';
 import { useSubscriptionStore } from '../../stores/subscriptionStore';
@@ -102,18 +104,53 @@ export const SubscriptionScreen: React.FC = () => {
         }
       },
       // 購入エラー時
-      (error) => {
+      async (error) => {
+        const errorCode = String(error.code);
         console.error('[IAP] Purchase error from listener:', {
-          code: error.code,
+          code: errorCode,
           message: error.message,
           fullError: JSON.stringify(error, null, 2),
         });
+
+        // duplicate-purchase エラーの場合は、購入を復元してみる
+        if (errorCode === 'duplicate-purchase') {
+          console.log('[IAP] Duplicate purchase detected, attempting restore...');
+          try {
+            const restoreResult = await restorePurchases();
+            console.log('[IAP] Restore result:', restoreResult);
+            if (restoreResult.success && restoreResult.subscriptionStatus === 'premium') {
+              Alert.alert(
+                t('subscription.restoredTitle'),
+                t('subscription.restoredMessage'),
+                [
+                  {
+                    text: 'OK',
+                    onPress: async () => {
+                      await completePlanSelection();
+                      navigation.replace('DummyTabs');
+                    },
+                  },
+                ]
+              );
+              setIsPurchasing(false);
+              return;
+            }
+          } catch (restoreError) {
+            console.error('[IAP] Restore after duplicate failed:', restoreError);
+          }
+        }
+
         setIsPurchasing(false);
 
-        // デバッグ用: 全てのエラーを表示（原因特定のため）
+        // ユーザーキャンセルの場合は何も表示しない
+        if (errorCode === 'user-cancelled' || errorCode === 'E_USER_CANCELLED') {
+          return;
+        }
+
+        // エラー詳細を表示（デバッグ用）
         Alert.alert(
-          'DEBUG: Purchase Error Details',
-          `code: ${error.code}\nmessage: ${error.message}\nresponseCode: ${(error as any).responseCode}\nproductId: ${(error as any).productId}\n\nFull error: ${JSON.stringify(error, null, 2).substring(0, 500)}`
+          t('subscription.purchaseErrorTitle'),
+          `${t('subscription.purchaseErrorMessage')}\n\n[DEBUG]\nCode: ${errorCode}\nMessage: ${error.message || 'N/A'}\nProduct: ${error.productId || 'N/A'}`
         );
       }
     );
@@ -132,18 +169,30 @@ export const SubscriptionScreen: React.FC = () => {
       const initResult = await initializeIAP();
       console.log('[IAP] IAP initialized:', initResult);
 
-      // デバッグ用: 初期化結果を表示
-      Alert.alert('DEBUG: IAP Init', `initializeIAP result: ${initResult}`);
+      // 未完了の購入をチェックして処理
+      console.log('[IAP] Checking for pending purchases...');
+      const pendingResult = await checkAndProcessPendingPurchases();
+      if (pendingResult?.success && pendingResult.subscriptionStatus === 'premium') {
+        console.log('[IAP] Found active subscription from pending purchase');
+        Alert.alert(
+          t('subscription.restoredTitle'),
+          t('subscription.restoredMessage'),
+          [
+            {
+              text: 'OK',
+              onPress: async () => {
+                await completePlanSelection();
+                navigation.replace('DummyTabs');
+              },
+            },
+          ]
+        );
+        return;
+      }
 
       console.log('[IAP] Fetching subscription products...');
       const products = await getSubscriptionProducts();
       console.log('[IAP] Products fetched:', JSON.stringify(products, null, 2));
-
-      // デバッグ用: 取得した商品を表示
-      Alert.alert(
-        'DEBUG: Products Loaded',
-        `Found ${products?.length || 0} products:\n${products?.map(p => `${p.productId}: ${p.price}`).join('\n') || 'None'}`
-      );
 
       if (products && products.length > 0) {
         products.forEach((product) => {
@@ -161,9 +210,6 @@ export const SubscriptionScreen: React.FC = () => {
       const errorMessage = error instanceof Error ? error.message : String(error);
       console.error('[IAP] Failed to load products:', errorMessage);
       console.error('[IAP] Full error:', JSON.stringify(error, null, 2));
-
-      // デバッグ用: エラーを表示
-      Alert.alert('DEBUG: Load Products Error', errorMessage);
     } finally {
       setIsLoading(false);
     }

@@ -101,7 +101,10 @@ function getLatestSubscription(receipts: AppleReceiptInfo[]): AppleReceiptInfo |
 }
 
 export const verifyAppleReceipt = onCall<VerifyReceiptData>(
-  { region: 'asia-northeast1' },
+  {
+    region: 'asia-northeast1',
+    secrets: ['APPLE_SHARED_SECRET'],
+  },
   async (request): Promise<VerifyReceiptResult> => {
     // 認証チェック
     const userId = requireAuth(request.auth);
